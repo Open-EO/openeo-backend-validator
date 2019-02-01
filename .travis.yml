@@ -7,6 +7,8 @@ matrix:
     env: BACKEND=https://earthengine.openeo.org/v0.3
   - name: "VITO"
     env: BACKEND=http://openeo.vgt.vito.be/openeo
+  - name: "EURAC"
+    env: BACKEND=http://saocompute.eurac.edu/openEO_0_3_0/openeo
 # command to install dependencies
 install:
   - pip install -r requirements.txt --extra-index-url https://artifactory.vgt.vito.be/api/pypi/python-openeo/simple
