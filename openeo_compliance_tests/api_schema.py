@@ -10,6 +10,8 @@ processes_schema = schema["paths"]["/processes"]["get"]["responses"]["200"]["con
 
 collections_schema = schema["paths"]["/collections"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
 
+collection_detail_schema = schema["paths"]["/collections/{name}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+
 #import sys
 #sys.setrecursionlimit(20000)
 #import json

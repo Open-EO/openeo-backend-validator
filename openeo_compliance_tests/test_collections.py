@@ -1,4 +1,4 @@
-from .api_schema import collections_schema,schema
+from .api_schema import collections_schema, schema
 import jsonschema
 
 def test_collections(backend):
@@ -13,3 +13,5 @@ def test_collections(backend):
     resolver = jsonschema.RefResolver.from_schema(schema)
     validator = jsonschema.validators.validator_for(schema)(collections_schema,resolver=resolver)
     validator.validate(collections,collections_schema)
+
+

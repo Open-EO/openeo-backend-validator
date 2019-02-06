@@ -10,4 +10,4 @@ def test_capabilities(backend):
     """
 
     capabilities = backend.get_json("")
-    jsonschema.validate(capabilities,capabilities_schema)
+    jsonschema.validate(capabilities, capabilities_schema)
