@@ -1,4 +1,4 @@
-package openeoct
+package main
 
 import (
 	"context"
