@@ -4,9 +4,6 @@ This standalone tool written in Go uses the Go package [kin-openapi](https://git
 
 ## Installation
 
-### Use the builds
-In the folder there are builds for windows and linux. They can be used directly, but I have to say that I only tested it on Kubuntu 18.04 LTS.
-
 ### Install (Build it) using Go
 1. Install Go on your computer by downloading it from the [download page](https://golang.org/dl/).
 1. Clone this Github repository (e,g, git clone https://github.com/Open-EO/openeo-backend-validator.git). 
