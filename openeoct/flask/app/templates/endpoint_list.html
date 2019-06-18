@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Endpoints List</title>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+    </head>
+
+    <body>
+<table class="table table-condensed" id="backendlist">
+        <thead>
+          <tr>
+            <th>Backend</th>
+            <th>URL</th>
+            <th>Type</th>
+            <th>Body</th>
+              <th>Head</th>
+              <th>Auth</th>
+              <th>Edit</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for endpoint in endpoints %}
+            <tr>
+                <td><button type="button" onclick="window.location.href='{{ url_for( 'backend_register', be_id=endpoint.backend) }}';">{{ endpoint.backend }}</button></td>
+                <td>{{ endpoint.url }}</td>
+                <td>{{ endpoint.type }}</td>
+                <td>{{ endpoint.body }}</td>
+                <td>{{ endpoint.head }}</td>
+                <td>{{ endpoint.auth }}</td>
+                <td><button type="button" onclick="window.location.href='{{ url_for( 'endpoint_register', ep_id=endpoint.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+</table>
+    <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+    </body>
+</html>
+
+

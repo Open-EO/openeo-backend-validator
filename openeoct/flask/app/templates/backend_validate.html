@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Backend Detail</title>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+
+</head>
+<body>
+
+{% from "_formhelpers.html" import render_field %}
+<div class="container">
+  <div class="mt-4">
+<form method=post>
+  <dl>
+    {{ render_field(form.name) }}
+    {{ render_field(form.url) }}
+    {{ render_field(form.openapi) }}
+    {{ render_field(form.output) }}
+    {{ render_field(form.authurl) }}
+      {{ render_field(form.username) }}
+      {{ render_field(form.password) }}
+  </dl>
+</form>
+  </div>
+  <div class="mt-4">
+  {% if results %}
+  <table class="table table-condensed" id="resultlist">
+        <thead>
+          <tr>
+            <th>Endpoint</th>
+            <th>Raw Result</th>
+            <th>Success</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for result in results %}
+            <tr>
+                <td>{{ result.endpoint }}</td>
+                <td>{{ result.value }}</td>
+                {% if result.success == True %}
+                <td><span class="glyphicon glyphicon-ok" style="color:green"></span></td>
+                {% else %}
+                <td><span class="glyphicon glyphicon-remove" style="color:red"></span></td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+</table>
+  {% endif %}
+  </div></div>
+<div class="text-center">
+    <button type="button" onclick="window.location.href='{{ url_for( 'backend_register', be_id=form.id.data ) }}';">Edit</button>
+<button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
+    <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+    <button type="button" onclick="window.location.href='{{ url_for('backend_add_endpoint', be_id=form.id.data) }}';">Add Endpoint</button>
+</div>
+</body>
+</html>

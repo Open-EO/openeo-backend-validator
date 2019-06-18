@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+
+  {% if form.id %}
+  <title>Update Backend</title>
+  {% else %}
+  <title>Register Backend</title>
+  {% endif %}
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+</head>
+<body>
+
+{% from "_formhelpers.html" import render_field %}
+<form method=post>
+  <dl>
+    {{ render_field(form.name) }}
+    {{ render_field(form.url) }}
+    {{ render_field(form.openapi) }}
+    {{ render_field(form.output) }}
+    {{ render_field(form.authurl) }}
+      {{ render_field(form.username) }}
+      {{ render_field(form.password) }}
+  <dt><label>Endpoints</label>
+            <table class="table table-condensed" id="backendlist">
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Type</th>
+              <th>Edit</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for endpoint in endpoints %}
+            <tr>
+                <td>{{ endpoint.url }}</td>
+                <td>{{ endpoint.type }}</td>
+                <td><button type="button" onclick="window.location.href='{{ url_for( 'endpoint_register', ep_id=endpoint.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+</table>
+    <dd><button type="button" onclick="window.location.href='{{ url_for('backend_add_endpoint', be_id=form.id.data) }}';">Add Endpoint <span class="glyphicon glyphicon-plus"></span></button>
+  </dl>
+
+  {% if form.id.data %}
+  <p><input type=submit value=Update>
+  {% else %}
+  <p><input type=submit value=Register>
+  {% endif %}
+  <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+  <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
+
+</form>
+
+</body>
+</html>

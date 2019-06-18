@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>OpeneoCT</title>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+    </head>
+
+    <body>
+<table class="table table-condensed" id="backendlist">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>URL</th>
+            <th>OpenAPI</th>
+              <th>Endpoints</th>
+              <th>Validate</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for backend in backends %}
+            <tr>
+                <td><button type="button" onclick="window.location.href='{{ url_for( 'backend_register', be_id=backend.id ) }}';">{{ backend.name }} <span class="glyphicon glyphicon-pencil"></span></button></td>
+                <td> <a href="{{ backend.url }}" target="_blank">{{ backend.url }}</a></td>
+                <td>{{ backend.openapi }}</td>
+                <td><button type="button" onclick="window.location.href='{{ url_for( 'endpoint_list', be_id=backend.id ) }}';">Endpoints</button></td>
+                <td><button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=backend.id ) }}';">Validate</button></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+</table>
+    </body>
+</html>
+
+

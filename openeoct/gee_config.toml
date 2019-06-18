@@ -4,4 +4,4 @@ username="group1"
 password="test123"
 authurl="/credentials/basic"
 endpoints= [ "/jobs", "/", "/collections" ]
-output="output.json"
+#output="output.json"
