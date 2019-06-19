@@ -28,3 +28,13 @@ def test_collections_collection_id(client, schema, api_version):
 def test_processes(client, schema):
     response = client.get_json('/processes')
     schema.get_response_validator(path='/processes').validate(response)
+
+
+def test_output_formats(client, schema):
+    response = client.get_json('/output_formats')
+    schema.get_response_validator(path='/output_formats').validate(response)
+
+
+def test_udf_runtimes(client, schema):
+    response = client.get_json('/udf_runtimes')
+    schema.get_response_validator(path='/udf_runtimes').validate(response)
