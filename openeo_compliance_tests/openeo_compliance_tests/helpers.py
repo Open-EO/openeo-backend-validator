@@ -9,11 +9,12 @@ class ApiClient:
     """Simple `requests` based API client."""
     _timeout = 1
 
-    def __init__(self, backend):
+    def __init__(self, backend: str):
         self.s = Session()
-        self.backend = backend
+        self.backend = backend.rstrip('/')
 
-    def get_json(self, path) -> dict:
+    def get_json(self, path: str) -> dict:
+        assert path.startswith('/')
         r = self.s.get(self.backend + path, timeout=self._timeout)
         r.raise_for_status()
         return r.json()
