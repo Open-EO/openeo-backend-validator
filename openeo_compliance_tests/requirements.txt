@@ -1,0 +1,4 @@
+requests
+pytest
+attrs>=17.4.0
+jsonschema
