@@ -9,6 +9,7 @@ from openeo_compliance_tests.helpers import ApiSchemaValidator, ApiClient
     '/processes',
     '/output_formats',
     '/udf_runtimes',
+    '/service_types',
 ])
 def test_generic_get(client: ApiClient, schema: ApiSchemaValidator, path: str):
     """Generic validation of simple get requests"""
