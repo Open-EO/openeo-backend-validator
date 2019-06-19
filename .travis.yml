@@ -14,6 +14,7 @@ before_install:
   - cd openeo_compliance_tests
 install:
   - pip install -r requirements.txt
+  - pip freeze
 # command to run tests
 script:
   - cd openeo_compliance_tests
