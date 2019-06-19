@@ -1,14 +1,22 @@
-def test_capabilities(client, schema):
-    response = client.get_json("/")
-    schema.get_response_validator(path='/').validate(response)
+import pytest
+
+from openeo_compliance_tests.helpers import ApiSchemaValidator, ApiClient
 
 
-def test_collections(client, schema):
-    response = client.get_json("/collections")
-    schema.get_response_validator(path='/collections').validate(response)
+@pytest.mark.parametrize("path", [
+    '/',
+    '/collections',
+    '/processes',
+    '/output_formats',
+    '/udf_runtimes',
+])
+def test_generic_get(client: ApiClient, schema: ApiSchemaValidator, path: str):
+    """Generic validation of simple get requests"""
+    response = client.get_json(path=path)
+    schema.get_response_validator(path=path).validate(response)
 
 
-def test_collections_collection_id(client, schema, api_version):
+def test_collections_collection_id(client, schema):
     if '/collections/{collection_id}' in schema.get_paths():
         # Since 0.4.0
         path = '/collections/{collection_id}'
@@ -19,22 +27,8 @@ def test_collections_collection_id(client, schema, api_version):
         field = 'name'
     validator = schema.get_response_validator(path=path)
 
-    # TODO: handle this loop with pytest.mark.parametrize
+    # TODO: handle this loop with pytest.mark.parametrize?
+    # TODO: limit the number of collections to check?
     for collection in client.get_json('/collections')['collections']:
         response = client.get_json('/collections/{cid}'.format(cid=collection[field]))
         validator.validate(response)
-
-
-def test_processes(client, schema):
-    response = client.get_json('/processes')
-    schema.get_response_validator(path='/processes').validate(response)
-
-
-def test_output_formats(client, schema):
-    response = client.get_json('/output_formats')
-    schema.get_response_validator(path='/output_formats').validate(response)
-
-
-def test_udf_runtimes(client, schema):
-    response = client.get_json('/udf_runtimes')
-    schema.get_response_validator(path='/udf_runtimes').validate(response)
