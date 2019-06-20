@@ -20,6 +20,8 @@ class ApiClient:
         return r.json()
 
 
+class ResponseNotInSchema(KeyError): pass
+
 class ApiSchemaValidator:
     """
     Helper class to load an OpenEo API schema definition
@@ -50,7 +52,10 @@ class ApiSchemaValidator:
     def get_response_validator(self, path: str = '/', operation: str = 'get', code: str = '200',
                                media_type: str = 'application/json', ) -> jsonschema.Draft4Validator:
         """Helper to get the response schema of a given request path"""
-        schema = self._schema['paths'][path][operation]['responses'][code]['content'][media_type]['schema']
+        try:
+            schema = self._schema['paths'][path][operation]['responses'][code]['content'][media_type]['schema']
+        except KeyError as e:
+            raise ResponseNotInSchema(*e.args) from None
         return self._get_validator(schema)
 
     def get_paths(self):

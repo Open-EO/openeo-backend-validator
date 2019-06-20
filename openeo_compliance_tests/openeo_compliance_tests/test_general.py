@@ -1,6 +1,6 @@
 import pytest
 
-from openeo_compliance_tests.helpers import ApiSchemaValidator, ApiClient
+from openeo_compliance_tests.helpers import ApiSchemaValidator, ApiClient, ResponseNotInSchema
 
 
 @pytest.mark.parametrize("path", [
@@ -11,10 +11,15 @@ from openeo_compliance_tests.helpers import ApiSchemaValidator, ApiClient
     '/udf_runtimes',
     '/service_types',
 ])
-def test_generic_get(client: ApiClient, schema: ApiSchemaValidator, path: str):
+def test_generic_get(client: ApiClient, schema: ApiSchemaValidator, api_version: str, path: str):
     """Generic validation of simple get requests"""
     response = client.get_json(path=path)
-    schema.get_response_validator(path=path).validate(response)
+    try:
+        validator = schema.get_response_validator(path=path)
+    except ResponseNotInSchema:
+        # Automatically skip paths that are not in tested API version (e.g. when validating against older schemas)
+        pytest.skip('Path {p!r} not in schema version {v}'.format(p=path, v=api_version))
+    validator.validate(response)
 
 
 def test_collections_collection_id(client, schema):
