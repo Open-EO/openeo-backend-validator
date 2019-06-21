@@ -48,6 +48,7 @@
             <th>URL</th>
             <th>Type</th>
               <th>Edit</th>
+              <th>Delete</th>
           </tr>
         </thead>
         <tbody>
@@ -57,6 +58,7 @@
                     <td>{{ endpoint.url }}</td>
                     <td>{{ endpoint.type }}</td>
                     <td><button type="button" onclick="window.location.href='{{ url_for( 'endpoint_register', ep_id=endpoint.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
+                    <td><button type="button" onclick="window.location.href='{{ url_for('backend_del_endpoint', ep_id=endpoint.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
                 </tr>
                 {% endfor %}
 

@@ -1,9 +1,10 @@
 
 from webopeneoct import app, db
-from .forms import BackendForm, EndpointForm
 from flask import request, flash, redirect, url_for, render_template
+from .forms import BackendForm, EndpointForm
 from .models import Backend, Endpoint
 from .service import run_validation
+
 
 CONFIG_PATH = "gee_config.toml"
 
@@ -42,7 +43,9 @@ def backend_edit(be_id):
         else:
             orig_backend.set(backend)
             db.session.commit()
-        return redirect(url_for('home'))
+
+        return redirect(request.referrer)
+
     else:
         if be_id:
             backend = Backend.query.filter(Backend.id == be_id).first()
@@ -101,7 +104,7 @@ def endpoint_register(ep_id=None):
             orig_endpoint.set(endpoint)
             db.session.commit()
 
-        return redirect(url_for('backend_edit', be_id=endpoint.backend))
+        return redirect(request.referrer)
     else:
         if ep_id:
             endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
@@ -111,7 +114,7 @@ def endpoint_register(ep_id=None):
     return render_template('endpoint_register.html', form=form)
 
 
-@app.route('/backend/add/<be_id>', methods=['GET', 'POST'])
+@app.route('/endpoint/add/<be_id>', methods=['GET', 'POST'])
 def backend_add_endpoint(be_id=None):
     """
     Add an endpoint to a backend at the database.
@@ -128,11 +131,29 @@ def backend_add_endpoint(be_id=None):
         endpoint = form.get_endpoint()
         db.session.add(endpoint)
 
-        return redirect(url_for('backend_edit', be_id=endpoint.backend))
+        return redirect(request.referrer)
     else:
         form.backend.data = be_id
 
     return render_template('endpoint_register.html', form=form)
+
+
+@app.route('/endpoint/del/<ep_id>', methods=['GET', 'POST'])
+def backend_del_endpoint(ep_id=None):
+    """
+    Add an endpoint to a backend at the database.
+
+    Parameters
+    ----------
+    be_id : int
+        ID of backend
+    """
+    if ep_id:
+        endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
+        db.session.delete(endpoint)
+        db.session.commit()
+
+    return redirect(request.referrer)
 
 
 @app.route('/backend/validate/<be_id>')
@@ -154,6 +175,7 @@ def backend_validate(be_id):
     results = run_validation(be_id)
 
     return render_template('backend_validate.html', form=form, results=results)
+
 
 @app.route('/endpoint/list')
 @app.route('/endpoint/list/<be_id>')
