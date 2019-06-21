@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/getkin/kin-openapi/pathpattern"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/pathpattern"
 )
 
 type Route struct {

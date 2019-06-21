@@ -6,8 +6,8 @@ import (
 
 	"openeo-backend-validator/openeoct/kin-openapi/openapi3"
 
-	"github.com/getkin/kin-openapi/openapi2"
-	"github.com/getkin/kin-openapi/openapi2conv"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/openapi2"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/openapi2conv"
 	"github.com/stretchr/testify/require"
 )
 

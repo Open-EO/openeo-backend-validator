@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
 	"github.com/stretchr/testify/require"
 )
 

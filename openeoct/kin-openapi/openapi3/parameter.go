@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/getkin/kin-openapi/jsoninfo"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/jsoninfo"
 )
 
 // Parameters is specified by OpenAPI/Swagger 3.0 standard.

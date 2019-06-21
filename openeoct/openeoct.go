@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3filter"
 
 	"github.com/BurntSushi/toml"
 	//"github.com/urfave/cli"

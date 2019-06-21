@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/url"
 
-	"openeo-backend-validator/openeoct/kin-openapi/openapi3"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
 
-	"github.com/getkin/kin-openapi/openapi2"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi2"
 )
 
 func ToV3Swagger(swagger *openapi2.Swagger) (*openapi3.Swagger, error) {

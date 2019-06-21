@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"unicode/utf16"
 
-	"github.com/getkin/kin-openapi/jsoninfo"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/jsoninfo"
 )
 
 var (

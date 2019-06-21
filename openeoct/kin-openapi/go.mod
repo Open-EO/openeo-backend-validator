@@ -1,4 +1,4 @@
-module github.com/getkin/kin-openapi
+module github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

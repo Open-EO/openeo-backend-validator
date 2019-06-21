@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
 )
 
 type AuthenticationInput struct {
