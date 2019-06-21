@@ -1,8 +1,10 @@
 import json
 import pkgutil
+import re
 
+import _pytest.config
 import jsonschema
-from requests import Session
+from requests import Session, Response
 
 
 class ApiClient:
@@ -13,14 +15,35 @@ class ApiClient:
         self.s = Session()
         self.backend = backend.rstrip('/')
 
-    def get_json(self, path: str) -> dict:
+    def get(self, path: str) -> Response:
         assert path.startswith('/')
-        r = self.s.get(self.backend + path, timeout=self._timeout)
+        return self.s.get(self.backend + path, timeout=self._timeout)
+
+    def get_json(self, path: str) -> dict:
+        r = self.get(path)
         r.raise_for_status()
         return r.json()
 
 
-class ResponseNotInSchema(KeyError): pass
+def get_api_version(config: _pytest.config.Config):
+    """Get/Guess API version from pytest config"""
+    version = config.getoption('--api-version')
+    if version:
+        if not re.match(r'^\d+\.\d+\.\d+$', version):
+            raise Exception('Invalid API version: {v!r}'.format(v=version))
+    else:
+        # Try to guess from backend url
+        backend = config.getoption("--backend")
+        match = re.search(r'(\d+)[._-](\d+)[._-](\d+)', backend)
+        if not match:
+            raise Exception('Failed to guess API version from backend url {b}.'.format(b=backend))
+        version = '.'.join(match.groups())
+    return version
+
+
+class ResponseNotInSchema(KeyError):
+    pass
+
 
 class ApiSchemaValidator:
     """
@@ -60,3 +83,6 @@ class ApiSchemaValidator:
 
     def get_paths(self):
         return self._schema['paths'].keys()
+
+    def get_path_schema(self, path: str):
+        return self._schema['paths'][path]

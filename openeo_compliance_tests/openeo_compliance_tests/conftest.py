@@ -1,11 +1,10 @@
 """
 Reusable test fixtures
 """
-import re
 
 import pytest
 
-from openeo_compliance_tests.helpers import ApiClient, ApiSchemaValidator
+from openeo_compliance_tests.helpers import ApiClient, ApiSchemaValidator, get_api_version
 
 
 @pytest.fixture
@@ -16,18 +15,7 @@ def client(request):
 
 @pytest.fixture
 def api_version(request):
-    version = request.config.getoption('--api-version')
-    if version:
-        if not re.match(r'^\d+\.\d+\.\d+$', version):
-            raise Exception('Invalid API version: {v!r}'.format(v=version))
-    else:
-        # Try to guess from backend url
-        backend = request.config.getoption("--backend")
-        match = re.search(r'(\d+)[._-](\d+)[._-](\d+)', backend)
-        if not match:
-            raise Exception('Failed to guess API version from backend url {b}.'.format(b=backend))
-        version = '.'.join(match.groups())
-    return version
+    return get_api_version(request.config)
 
 
 @pytest.fixture
