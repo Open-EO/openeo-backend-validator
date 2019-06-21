@@ -92,7 +92,7 @@ class EndpointForm(Form):
                                validators=[
                                    Required('Please select an organisation')])
     url = StringField('URL')
-    type = SelectField('Type', choices=[('get', 'GET'), ('post', 'POST'), ('patch', 'PATCH')],
+    type = SelectField('Type', choices=[('get', 'GET')],#, ('post', 'POST'), ('patch', 'PATCH')],
                                validators=[
                                    Required('Please select an organisation')])
     body = TextAreaField('Body')

@@ -67,7 +67,7 @@
   {% endif %}
   </div></div>
 <div class="text-center">
-    <button type="button" onclick="window.location.href='{{ url_for( 'backend_register', be_id=form.id.data ) }}';">Edit</button>
+    <button type="button" onclick="window.location.href='{{ url_for( 'backend_edit', be_id=form.id.data ) }}';">Edit</button>
 <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
     <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
     <button type="button" onclick="window.location.href='{{ url_for('backend_add_endpoint', be_id=form.id.data) }}';">Add Endpoint</button>

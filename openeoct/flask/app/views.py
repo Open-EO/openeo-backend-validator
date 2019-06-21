@@ -18,9 +18,8 @@ def home():
     return render_template('home.html', backends=backends)
 
 
-@app.route('/backend/register/', methods=['GET', 'POST'])
-@app.route('/backend/register/<be_id>', methods=['GET', 'POST'])
-def backend_register(be_id=None):
+@app.route('/backend/edit/<be_id>', methods=['GET', 'POST'])
+def backend_edit(be_id):
     """
     Edit or register a backend at the database. If be_id is not None it will edit the existing one,
     otherwise it creates a new backend instance.
@@ -54,10 +53,30 @@ def backend_register(be_id=None):
     if be_id:
         endpoints = Endpoint.query.filter(Endpoint.backend == be_id).all()
 
-    return render_template('backend_register.html', form=form, endpoints=endpoints)
+    return render_template('backend_edit.html', form=form, endpoints=endpoints)
 
 
-@app.route('/endpoint/register', methods=['GET', 'POST'])
+@app.route('/backend/register/', methods=['GET', 'POST'])
+def backend_register():
+    """
+    Edit or register a backend at the database. If be_id is not None it will edit the existing one,
+    otherwise it creates a new backend instance.
+
+    """
+    form = BackendForm(request.form)
+
+    if request.method == 'POST' and form.validate():
+
+        backend = form.get_backend()
+
+        db.session.add(backend)
+
+        return redirect(url_for('home'))
+
+    return render_template('backend_register.html', form=form, endpoints=None)
+
+
+@app.route('/endpoint/register', methods=['GET', 'POST'], defaults={'ep_id': None})
 @app.route('/endpoint/register/<ep_id>', methods=['GET', 'POST'])
 def endpoint_register(ep_id=None):
     """
@@ -82,7 +101,7 @@ def endpoint_register(ep_id=None):
             orig_endpoint.set(endpoint)
             db.session.commit()
 
-        return redirect(url_for('backend_register', be_id=endpoint.backend))
+        return redirect(url_for('backend_edit', be_id=endpoint.backend))
     else:
         if ep_id:
             endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
@@ -109,7 +128,7 @@ def backend_add_endpoint(be_id=None):
         endpoint = form.get_endpoint()
         db.session.add(endpoint)
 
-        return redirect(url_for('backend_register', be_id=endpoint.backend))
+        return redirect(url_for('backend_edit', be_id=endpoint.backend))
     else:
         form.backend.data = be_id
 
