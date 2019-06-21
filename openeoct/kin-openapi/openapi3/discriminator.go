@@ -3,7 +3,7 @@ package openapi3
 import (
 	"context"
 
-	"github.com/Open-EO/openeo-backend-validator/openeoct/jsoninfo"
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/jsoninfo"
 )
 
 // Discriminator is specified by OpenAPI/Swagger standard version 3.0.
