@@ -3,7 +3,8 @@ import json
 import toml
 import subprocess
 import os
-
+import time
+WORKING_DIR = "../.."
 
 def create_configfile(be_id):
     """
@@ -66,9 +67,10 @@ def read_result(be_id):
         List of Result instances.
 
     """
+    time.sleep(1)
     backend = Backend.query.filter(Backend.id == be_id).first()
 
-    result_file = open("../{}".format(backend.output), "r")
+    result_file = open("{}/{}".format(WORKING_DIR, backend.output), "r")
 
     result = json.loads(result_file.read())
 
@@ -95,7 +97,9 @@ def run_validation(be_id):
 
     cmd = ['./openeoct', 'config', config_path]
 
-    subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd="..")
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=WORKING_DIR)
+
+    # out, err = p.communicate()
 
     return read_result(be_id)
 

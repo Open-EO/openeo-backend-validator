@@ -12,7 +12,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///' + os.path.join(basedir, 'op
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db = SQLAlchemy(app)
 
-from app import views, models
+from webopeneoct import views, models
 
 # needs to be executed in the first time, to create the sqlite database
 #db.create_all()

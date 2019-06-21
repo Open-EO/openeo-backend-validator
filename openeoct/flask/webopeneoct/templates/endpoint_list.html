@@ -42,9 +42,9 @@
                 <td><button type="button" onclick="window.location.href='{{ url_for( 'backend_edit', be_id=endpoint.backend) }}';">{{ endpoint.backend }}</button></td>
                 <td>{{ endpoint.url }}</td>
                 <td>{{ endpoint.type }}</td>
-                <td>{{ endpoint.body }}</td>
-                <td>{{ endpoint.head }}</td>
-                <td>{{ endpoint.auth }}</td>
+                <td> - </td>
+                <td> - </td>
+                <td> - </td>
                 <td><button type="button" onclick="window.location.href='{{ url_for( 'endpoint_register', ep_id=endpoint.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
             </tr>
             {% endfor %}

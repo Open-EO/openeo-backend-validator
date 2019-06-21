@@ -1,4 +1,4 @@
-from app import db
+from webopeneoct import db
 
 
 class Backend(db.Model):
@@ -52,7 +52,7 @@ class Endpoint(db.Model):
     including a one-to-many relation to the Backend instance.
     """
     id = db.Column(db.Integer, primary_key=True)
-    url = db.Column(db.String, unique=True, nullable=False)
+    url = db.Column(db.String, nullable=False)
     type = db.Column(db.String, nullable=False)
     body = db.Column(db.String)
     head = db.Column(db.String)

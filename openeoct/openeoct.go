@@ -216,7 +216,8 @@ func ReadConfig(config_file string) Config {
 }
 
 // Testing Main function
-/*func main() {
+/*
+func main() {
 
 	// Config file path
 	var config Config
@@ -249,7 +250,7 @@ func ReadConfig(config_file string) Config {
 	// 	log.Fatal(apperr)
 	// }
 
-	config = ReadConfig("gee_config_v4.toml")
+	config = ReadConfig("vito_config.toml")
 
 	// config file read correctly
 	if config.Url == "" {

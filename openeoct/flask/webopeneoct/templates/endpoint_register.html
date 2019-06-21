@@ -35,15 +35,9 @@
     {{ render_field(form.backend) }}
     {{ render_field(form.url) }}
     {{ render_field(form.type) }}
-<!--    {{ render_field(form.body) }}
-    {{ render_field(form.head) }}
-    {{ render_field(form.auth) }} -->
   </dl>
-  {% if form.id.data %}
-  <p><input type=submit value=Update>
-  {% else %}
-  <p><input type=submit value=Register>
-  {% endif %}
+  <p><input type=submit value=Submit>
+
   <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
   <button type="button" onclick="window.location.href='{{ url_for('backend_edit', be_id=form.backend.data) }}';">Backend</button>
 </form>

@@ -1,5 +1,5 @@
 
-from app import app, db
+from webopeneoct import app, db
 from .forms import BackendForm, EndpointForm
 from flask import request, flash, redirect, url_for, render_template
 from .models import Backend, Endpoint

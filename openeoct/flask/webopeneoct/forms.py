@@ -62,7 +62,8 @@ class BackendForm(Form):
            backend : Backend
                Backend instance with values of the form.
         """
-        return Backend(self.id.data, self.name.data, self.url.data, self.openapi.data, output=self.output.data,
+        default_output = "result_{}.json".format(self.id.data)
+        return Backend(self.id.data, self.name.data, self.url.data, self.openapi.data, output=default_output,
                 authurl=self.authurl.data, username=self.username.data, password=self.password.data)
 
 
@@ -95,9 +96,9 @@ class EndpointForm(Form):
     type = SelectField('Type', choices=[('get', 'GET')],#, ('post', 'POST'), ('patch', 'PATCH')],
                                validators=[
                                    Required('Please select an organisation')])
-    body = TextAreaField('Body')
-    head = TextAreaField('Head')
-    auth = SelectField('Authentication', choices=[('Auto', 'auto'), ('Yes', 'yes'), ('No', 'no')])
+#    body = TextAreaField('Body')
+#    head = TextAreaField('Head')
+#    auth = SelectField('Authentication', choices=[('Auto', 'auto'), ('Yes', 'yes'), ('No', 'no')])
 
     def __init__(self, *args, **kwargs):
         """
@@ -125,9 +126,9 @@ class EndpointForm(Form):
         self.backend.data = endpoint.backend
         self.url.data = endpoint.url
         self.type.data = endpoint.type
-        self.body.data = endpoint.body
-        self.head.data = endpoint.head
-        self.auth.data = endpoint.auth
+#        self.body.data = endpoint.body
+#        self.head.data = endpoint.head
+#        self.auth.data = endpoint.auth
         self.id.data = endpoint.id
 
     def get_endpoint(self):
@@ -139,5 +140,5 @@ class EndpointForm(Form):
            endpoint : Endpoint
                Endpoint instance with values of the form.
         """
-        return Endpoint(self.backend.data, self.url.data, self.type.data, body=self.body.data, head=self.head.data,
-                auth=self.auth.data)
+        return Endpoint(self.backend.data, self.url.data, self.type.data) #body=self.body.data, head=self.head.data,
+                #auth=self.auth.data)
