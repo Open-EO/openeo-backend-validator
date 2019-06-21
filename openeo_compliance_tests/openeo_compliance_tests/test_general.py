@@ -17,13 +17,14 @@ def test_get_generic(client: ApiClient, schema: ApiSchemaValidator, api_version:
     """
     Generic validation of simple get requests
     """
-    response = client.get_json(path=path)
     try:
         validator = schema.get_response_validator(path=path)
     except ResponseNotInSchema:
         # Automatically skip paths that are not in tested API version (e.g. when validating against older schemas)
         pytest.skip('Path {p!r} not in schema version {v}'.format(p=path, v=api_version))
-    validator.validate(response)
+    else:
+        response = client.get_json(path=path)
+        validator.validate(response)
 
 
 def test_collections_collection_id(client, schema):
@@ -42,6 +43,13 @@ def test_collections_collection_id(client, schema):
     for collection in client.get_json('/collections')['collections']:
         response = client.get_json('/collections/{cid}'.format(cid=collection[field]))
         validator.validate(response)
+
+
+def test_well_known_openeo(client, schema, api_version):
+    # Special case: /.well-known/openeo should be available directly under domain
+    path = '/.well-known/openeo'
+    client = ApiClient(backend=client.domain)
+    test_get_generic(client=client, schema=schema, api_version=api_version, path=path)
 
 
 def test_get_unauthorized(client: ApiClient, unauthorized_get_path: str):

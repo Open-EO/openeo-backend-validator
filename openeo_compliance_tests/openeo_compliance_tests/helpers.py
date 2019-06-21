@@ -1,6 +1,7 @@
 import json
 import pkgutil
 import re
+from urllib.parse import urlparse
 
 import _pytest.config
 import jsonschema
@@ -14,6 +15,11 @@ class ApiClient:
     def __init__(self, backend: str):
         self.s = Session()
         self.backend = backend.rstrip('/')
+
+    @property
+    def domain(self):
+        parsed = urlparse(self.backend)
+        return '{s}://{d}'.format(s=parsed.scheme, d=parsed.netloc)
 
     def get(self, path: str) -> Response:
         assert path.startswith('/')
