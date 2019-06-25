@@ -13,8 +13,8 @@ This standalone tool written in Go uses the Go package [kin-openapi](https://git
 
     If the build fails because of missing dependencies, install them first as follows:
 
-        go get github.com/getkin/kin-openapi/openapi3
-        go get github.com/getkin/kin-openapi/openapi3filter
+        go get github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3
+        go get github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3filter
         go get github.com/urfave/cli
         go get github.com/BurntSushi/toml
 
