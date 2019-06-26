@@ -26,11 +26,21 @@ type BackEnd struct {
 	// Add auth and that stuff
 }
 
+// Endpoint "class"
+type Endpoint struct {
+	id           int
+	url          string
+	request_type string
+	body         string
+	header       string
+	// Add auth and that stuff
+}
+
 // ComplianceTest "class"
 type ComplianceTest struct {
 	backend      BackEnd
 	apifile      string
-	endpoints    []string
+	endpoints    []Endpoint
 	authendpoint string
 	username     string
 	password     string
@@ -45,9 +55,9 @@ func (ct *ComplianceTest) validateAll() map[string]string {
 	for _, endpoint := range ct.endpoints {
 		state, err := ct.validate(endpoint)
 		if err != nil {
-			states[endpoint] = err.msg
+			states[endpoint.url] = err.msg
 		} else {
-			states[endpoint] = state
+			states[endpoint.url] = state
 		}
 	}
 	return states
@@ -55,7 +65,7 @@ func (ct *ComplianceTest) validateAll() map[string]string {
 
 // Validates a single endpoint defined as input parameter.
 // Returns the resulting state and an error message if something went wrong.
-func (ct *ComplianceTest) validate(endpoint string) (string, *ErrorMessage) {
+func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 	//log.Println(openapi3.SchemaStringFormats)
 	//openapi3.DefineStringFormat("url", `^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 	//log.Println(openapi3.SchemaStringFormats)
@@ -87,7 +97,14 @@ func (ct *ComplianceTest) validate(endpoint string) (string, *ErrorMessage) {
 		}
 	}
 
-	httpReq, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+	method := http.MethodGet
+
+	if endpoint.request_type == "POST" {
+		method = http.MethodPost
+	}
+
+	httpReq, _ := http.NewRequest(method, endpoint.url, nil)
+
 	if token != "" {
 		bearer := "Bearer " + token
 		httpReq.Header.Add("Authorization", bearer)
@@ -137,7 +154,7 @@ func (ct *ComplianceTest) validate(endpoint string) (string, *ErrorMessage) {
 
 	client := &http.Client{}
 
-	execReq, _ := http.NewRequest(http.MethodGet, ct.backend.url+endpoint, nil)
+	execReq, _ := http.NewRequest(http.MethodGet, ct.backend.url+endpoint.url, nil)
 	if token != "" {
 		bearer := "Bearer " + token
 		execReq.Header.Add("Authorization", bearer)
@@ -216,78 +233,87 @@ func ReadConfig(config_file string) Config {
 }
 
 // Testing Main function
-/*
-func main() {
 
-	// Config file path
-	var config Config
+// func main() {
 
-	// CLI handling
-	// app := cli.NewApp()
-	// app.Name = "openeoct"
-	// app.Name = "openeoct"
-	// app.Version = "0.1.0"
-	// app.Usage = "validating a back end against an openapi description file!"
+// 	// Config file path
+// 	var config Config
 
-	// // add config command
-	// app.Commands = []cli.Command{
-	// 	{
-	// 		Name:    "config",
-	// 		Aliases: []string{"c"},
-	// 		Usage:   "load from config file",
-	// 		Action: func(c *cli.Context) error {
-	// 			//configfile = c.Args().First()
-	// 			config = ReadConfig(c.Args().First())
-	// 			//log.Println("Configfile1: ", config.Url)
-	// 			return nil
-	// 		},
-	// 	},
-	// }
+// 	// CLI handling
+// 	// app := cli.NewApp()
+// 	// app.Name = "openeoct"
+// 	// app.Name = "openeoct"
+// 	// app.Version = "0.1.0"
+// 	// app.Usage = "validating a back end against an openapi description file!"
 
-	// // run CLI
-	// apperr := app.Run(os.Args)
-	// if apperr != nil {
-	// 	log.Fatal(apperr)
-	// }
+// 	// // add config command
+// 	// app.Commands = []cli.Command{
+// 	// 	{
+// 	// 		Name:    "config",
+// 	// 		Aliases: []string{"c"},
+// 	// 		Usage:   "load from config file",
+// 	// 		Action: func(c *cli.Context) error {
+// 	// 			//configfile = c.Args().First()
+// 	// 			config = ReadConfig(c.Args().First())
+// 	// 			//log.Println("Configfile1: ", config.Url)
+// 	// 			return nil
+// 	// 		},
+// 	// 	},
+// 	// }
 
-	config = ReadConfig("vito_config.toml")
+// 	// // run CLI
+// 	// apperr := app.Run(os.Args)
+// 	// if apperr != nil {
+// 	// 	log.Fatal(apperr)
+// 	// }
 
-	// config file read correctly
-	if config.Url == "" {
-		log.Println("Error: No config file specified")
-	}
+// 	config = ReadConfig("gee_config_v4.toml")
 
-	// define back end and compliance test instance
-	ct := new(ComplianceTest)
-	ct.backend.url = config.Url
-	ct.apifile = config.Openapi
+// 	// config file read correctly
+// 	if config.Url == "" {
+// 		log.Println("Error: No config file specified")
+// 	}
 
-	ct.username = config.Username
-	ct.password = config.Password
-	ct.authendpoint = config.Authurl
-	ct.endpoints = config.Endpoints
+// 	// define back end and compliance test instance
+// 	ct := new(ComplianceTest)
+// 	ct.backend.url = config.Url
+// 	ct.apifile = config.Openapi
 
-	// state, err := ct.validate(config.Endpoints)
-	//log.Println("Result: ", state)
-	//if err != nil {
-	//		log.Println("Error: ", err.msg)
-	//	}
+// 	ct.username = config.Username
+// 	ct.password = config.Password
+// 	ct.authendpoint = config.Authurl
 
-	//	ct.endpoints = []string{"/", "/collections", "/service_types"}
+// 	var ep_array []Endpoint
+// 	for _, endpoint := range config.Endpoints {
 
-	// Run validation
-	result := ct.validateAll()
+// 		ep := Endpoint{url: endpoint, request_type: "GET"}
 
-	jsonString, _ := json.Marshal(result)
+// 		ep_array = append(ep_array, ep)
+// 	}
 
-	// Write to log stdout or to output file
-	if config.Output == "" {
-		log.Println("Result:", string(jsonString))
-	} else {
-		ioutil.WriteFile(config.Output, jsonString, 0644)
-	}
+// 	ct.endpoints = ep_array
 
-}*/
+// 	// state, err := ct.validate(config.Endpoints)
+// 	//log.Println("Result: ", state)
+// 	//if err != nil {
+// 	//		log.Println("Error: ", err.msg)
+// 	//	}
+
+// 	//	ct.endpoints = []string{"/", "/collections", "/service_types"}
+
+// 	// Run validation
+// 	result := ct.validateAll()
+
+// 	jsonString, _ := json.Marshal(result)
+
+// 	// Write to log stdout or to output file
+// 	if config.Output == "" {
+// 		log.Println("Result:", string(jsonString))
+// 	} else {
+// 		ioutil.WriteFile(config.Output, jsonString, 0644)
+// 	}
+
+// }
 
 // Main function
 func main() {
@@ -336,7 +362,16 @@ func main() {
 	ct.username = config.Username
 	ct.password = config.Password
 	ct.authendpoint = config.Authurl
-	ct.endpoints = config.Endpoints
+
+	var ep_array []Endpoint
+	for _, endpoint := range config.Endpoints {
+
+		ep := Endpoint{url: endpoint, request_type: "GET"}
+
+		ep_array = append(ep_array, ep)
+	}
+
+	ct.endpoints = ep_array
 
 	// state, err := ct.validate(config.Endpoints)
 	//log.Println("Result: ", state)
