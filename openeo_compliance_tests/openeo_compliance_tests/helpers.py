@@ -21,12 +21,16 @@ class ApiClient:
         parsed = urlparse(self.backend)
         return '{s}://{d}'.format(s=parsed.scheme, d=parsed.netloc)
 
-    def get(self, path: str) -> Response:
+    def request(self, method: str, path: str, **kwargs):
         assert path.startswith('/')
-        return self.s.get(self.backend + path, timeout=self._timeout)
+        timeout = kwargs.pop('timeout', self._timeout)
+        return self.s.request(method=method, url=self.backend + path, timeout=timeout, **kwargs)
 
-    def get_json(self, path: str) -> dict:
-        r = self.get(path)
+    def get(self, path: str, **kwargs) -> Response:
+        return self.request(method='get', path=path, **kwargs)
+
+    def get_json(self, path: str, **kwargs) -> dict:
+        r = self.get(path, **kwargs)
         r.raise_for_status()
         return r.json()
 
