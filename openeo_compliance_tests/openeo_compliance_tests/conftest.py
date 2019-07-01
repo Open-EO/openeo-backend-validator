@@ -4,13 +4,13 @@ Reusable test fixtures
 
 import pytest
 
-from openeo_compliance_tests.helpers import ApiClient, get_api_version, OpenApiSpec, PurePythonValidator
+from openeo_compliance_tests.helpers import ApiClient, get_backend, get_api_version, OpenApiSpec, PurePythonValidator
 
 
 @pytest.fixture
 def client(request):
     """Pytest fixture for an API client for desired backend."""
-    return ApiClient(request.config.getoption("--backend"))
+    return ApiClient(get_backend(request.config))
 
 
 @pytest.fixture

@@ -37,6 +37,10 @@ class ApiClient:
         return self.request(method='get', path=path, **kwargs)
 
 
+def get_backend(config: _pytest.config.Config):
+    return config.getoption('--backend')
+
+
 def get_api_version(config: _pytest.config.Config):
     """Get/Guess API version from pytest config"""
     version = config.getoption('--api-version')
@@ -45,7 +49,7 @@ def get_api_version(config: _pytest.config.Config):
             raise Exception('Invalid API version: {v!r}'.format(v=version))
     else:
         # Try to guess from backend url
-        backend = config.getoption("--backend")
+        backend = get_backend(config)
         match = re.search(r'(\d+)[._-](\d+)[._-](\d+)', backend)
         if not match:
             raise Exception('Failed to guess API version from backend url {b}.'.format(b=backend))
