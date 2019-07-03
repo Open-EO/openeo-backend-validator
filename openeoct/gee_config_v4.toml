@@ -1,7 +1,7 @@
 url="https://earthengine.openeo.org/v0.4"
 openapi="openapi_0_4_1.json"
-username="group1"
+username="group10"
 password="test123"
 authurl="/credentials/basic"
-endpoints= [ "/jobs", "/", "/collections" ]
+endpoints= [ "/", "/output_formats", "/service_types", "/processes", "/collections", "/jobs", "/services", "/files/groupX", "/process_graphs/", "/me" ]
 #output="output.json"
