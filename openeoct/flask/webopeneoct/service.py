@@ -27,16 +27,29 @@ def create_configfile(be_id):
 
     config_path = "config_{}.toml".format(str(backend.id))
 
-    endpoint_list = []
-
+    endpoint_list = {}
+    counter = 0
     for endpoint in endpoints:
-        endpoint_list.append(endpoint.url)
+        endpoint_list["endpoints.endpoint"+str(counter)] = {
+            "id": "endpoint"+str(counter),
+            "url": endpoint.url,
+            "request_type": endpoint.type
+        }
 
-    openapi_file = "openapi_{}.json".format(backend.openapi)
+
+
+        body_file = "body_{}".format(endpoint.id)
+        if os.path.isfile(body_file):
+            body_full_path = os.getcwd() + "/" + body_file
+            endpoint_list["endpoints.endpoint" + str(counter)]["body"] = body_full_path
+
+        counter += 1
+
+    #openapi_file = "openapi_{}.json".format(backend.openapi)
 
     toml_dict = {
         "url": backend.url,
-        "openapi": openapi_file,
+        "openapi": backend.openapi,
         "username": backend.username,
         "password": backend.password,
         "authurl": backend.authurl,
@@ -91,7 +104,9 @@ def run_validation(be_id):
     be_id : int
         ID of backend
     """
-    config_path = create_configfile(be_id)
+    # config_path = create_configfile(be_id)
+
+    config_path = "config_{}.toml".format(str(be_id))
 
     config_path = os.getcwd() + "/" + config_path
 
@@ -99,7 +114,10 @@ def run_validation(be_id):
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=WORKING_DIR)
 
-    # out, err = p.communicate()
+    out, err = p.communicate()
+    print(err)
+    if len(err) != 0:
+        return ["Error executing the openeoct command"]
 
     return read_result(be_id)
 

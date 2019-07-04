@@ -1,7 +1,7 @@
 from wtforms import Form, BooleanField, StringField, PasswordField, validators, SelectField, TextAreaField, IntegerField
 from wtforms.validators import Required
 from .models import Backend, Endpoint
-
+import os
 
 class BackendForm(Form):
     """
@@ -29,7 +29,7 @@ class BackendForm(Form):
     id = IntegerField('Id')
     name = StringField('Name')
     url = StringField('URL')
-    openapi = SelectField('Backend', choices=[('0_3_1', '0.3.1'), ('0_4_0', '0.4.0'), ('0_4_1', '0.4.1')])
+    openapi = StringField('OpenAPI-URL') #SelectField('Backend', choices=[('0_3_1', '0.3.1'), ('0_4_0', '0.4.0'), ('0_4_1', '0.4.1')])
     output = StringField('Output')
     authurl = StringField('Authentication URL')
     username = StringField('Authentication Username')
@@ -93,10 +93,11 @@ class EndpointForm(Form):
                                validators=[
                                    Required('Please select an organisation')])
     url = StringField('URL')
-    type = SelectField('Type', choices=[('get', 'GET')],#, ('post', 'POST'), ('patch', 'PATCH')],
+    type = SelectField('Type', choices=[('GET', 'GET'), ('POST', 'POST'), ('PATCH', 'PATCH'), ('PUT', 'PUT'),
+                                        ('DELETE', 'DELETE')],
                                validators=[
                                    Required('Please select an organisation')])
-#    body = TextAreaField('Body')
+    body = TextAreaField('Body', render_kw={'class': 'form-control', 'rows': 20})
 #    head = TextAreaField('Head')
 #    auth = SelectField('Authentication', choices=[('Auto', 'auto'), ('Yes', 'yes'), ('No', 'no')])
 
@@ -114,6 +115,7 @@ class EndpointForm(Form):
             for backend in backends
         ]
 
+
     def set_endpoint(self, endpoint):
         """
             Sets the form values to the values of an endpoint instance
@@ -130,6 +132,12 @@ class EndpointForm(Form):
 #        self.head.data = endpoint.head
 #        self.auth.data = endpoint.auth
         self.id.data = endpoint.id
+
+        body_file = "body_{}".format(self.id.data)
+        if os.path.isfile(body_file):
+            f = open(body_file, "r")
+            self.body.data = f.read()
+            f.close()
 
     def get_endpoint(self):
         """

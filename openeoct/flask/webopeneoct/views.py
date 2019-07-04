@@ -3,7 +3,7 @@ from webopeneoct import app, db
 from flask import request, flash, redirect, url_for, render_template
 from .forms import BackendForm, EndpointForm
 from .models import Backend, Endpoint
-from .service import run_validation
+from .service import run_validation, create_configfile
 
 
 CONFIG_PATH = "gee_config.toml"
@@ -44,8 +44,9 @@ def backend_edit(be_id):
             orig_backend.set(backend)
             db.session.commit()
 
-        return redirect(request.referrer)
+        create_configfile(be_id)
 
+        return redirect(request.referrer)
     else:
         if be_id:
             backend = Backend.query.filter(Backend.id == be_id).first()
@@ -76,6 +77,7 @@ def backend_register():
 
         return redirect(url_for('home'))
 
+
     return render_template('backend_register.html', form=form, endpoints=None)
 
 
@@ -104,12 +106,20 @@ def endpoint_register(ep_id=None):
             orig_endpoint.set(endpoint)
             db.session.commit()
 
+        if len(form.body.data) != 0:
+            f = open("body_{}".format(ep_id), "w")
+            f.write(form.body.data)
+            f.close()
+
+        create_configfile(endpoint.backend)
+
         return redirect(request.referrer)
     else:
         if ep_id:
             endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
             if endpoint:
                 form.set_endpoint(endpoint)
+
 
     return render_template('endpoint_register.html', form=form)
 
@@ -131,6 +141,13 @@ def backend_add_endpoint(be_id=None):
         endpoint = form.get_endpoint()
         db.session.add(endpoint)
 
+        if len(form.body.data) != 0:
+            f = open("body_{}".format(endpoint.id), "w")
+            f.write(form.body.data)
+            f.close()
+
+        create_configfile(be_id)
+
         return redirect(request.referrer)
     else:
         form.backend.data = be_id
@@ -149,9 +166,12 @@ def backend_del_endpoint(ep_id=None):
         ID of backend
     """
     if ep_id:
+
         endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
+        be_id = endpoint.backend
         db.session.delete(endpoint)
         db.session.commit()
+        create_configfile(be_id)
 
     return redirect(request.referrer)
 
@@ -171,6 +191,10 @@ def backend_validate(be_id):
     form = BackendForm(request.form)
 
     form.set_backend(backend)
+
+   # if backend.output == "result_None.json":
+   #     backend.output = "result_{}.json".format(backend.id)
+   #     db.session.commit()
 
     results = run_validation(be_id)
 
