@@ -1,22 +1,58 @@
 import json
 import pkgutil
+import re
+from urllib.parse import urlparse
 
+import _pytest.config
 import jsonschema
-from requests import Session
+from requests import Session, Response
 
 
 class ApiClient:
     """Simple `requests` based API client."""
     _timeout = 1
 
-    def __init__(self, backend):
+    def __init__(self, backend: str):
         self.s = Session()
-        self.backend = backend
+        self.backend = backend.rstrip('/')
 
-    def get_json(self, path) -> dict:
-        r = self.s.get(self.backend + path, timeout=self._timeout)
+    @property
+    def domain(self):
+        parsed = urlparse(self.backend)
+        return '{s}://{d}'.format(s=parsed.scheme, d=parsed.netloc)
+
+    def request(self, method: str, path: str, **kwargs):
+        assert path.startswith('/')
+        timeout = kwargs.pop('timeout', self._timeout)
+        return self.s.request(method=method, url=self.backend + path, timeout=timeout, **kwargs)
+
+    def get(self, path: str, **kwargs) -> Response:
+        return self.request(method='get', path=path, **kwargs)
+
+    def get_json(self, path: str, **kwargs) -> dict:
+        r = self.get(path, **kwargs)
         r.raise_for_status()
         return r.json()
+
+
+def get_api_version(config: _pytest.config.Config):
+    """Get/Guess API version from pytest config"""
+    version = config.getoption('--api-version')
+    if version:
+        if not re.match(r'^\d+\.\d+\.\d+$', version):
+            raise Exception('Invalid API version: {v!r}'.format(v=version))
+    else:
+        # Try to guess from backend url
+        backend = config.getoption("--backend")
+        match = re.search(r'(\d+)[._-](\d+)[._-](\d+)', backend)
+        if not match:
+            raise Exception('Failed to guess API version from backend url {b}.'.format(b=backend))
+        version = '.'.join(match.groups())
+    return version
+
+
+class ResponseNotInSchema(KeyError):
+    pass
 
 
 class ApiSchemaValidator:
@@ -49,8 +85,14 @@ class ApiSchemaValidator:
     def get_response_validator(self, path: str = '/', operation: str = 'get', code: str = '200',
                                media_type: str = 'application/json', ) -> jsonschema.Draft4Validator:
         """Helper to get the response schema of a given request path"""
-        schema = self._schema['paths'][path][operation]['responses'][code]['content'][media_type]['schema']
+        try:
+            schema = self._schema['paths'][path][operation]['responses'][code]['content'][media_type]['schema']
+        except KeyError as e:
+            raise ResponseNotInSchema(*e.args) from None
         return self._get_validator(schema)
 
     def get_paths(self):
         return self._schema['paths'].keys()
+
+    def get_path_schema(self, path: str):
+        return self._schema['paths'][path]

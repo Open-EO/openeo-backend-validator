@@ -27,11 +27,11 @@ At the moment the tool requires a config file in [TOML](https://github.com/toml-
 to specify the necessary information (e.g. back end url, username, etc):
 
 *  *url* - the url of the back end that should be validated
-*  *openapi* - the openEO openapi.json file that it will be validated against (ATM you should use the files in the repository, since I had to make minor modifications to make it run) 
+*  *openapi* - the openEO openapi.json file/url it will be validated against 
 *  *username* - username of the back end (empty or missing if there is no authentication needed)
 *  *password* - password of the user (empty or missing if there is no authentication needed)
 *  *authurl* - the authentication endpoint of the back end (e.g. "/credentials/basic" or empty/missing if there is no authentication needed)
-*  *endpoints* - list of endpoints that should be tested at the back end (ATM only GET endpoints are supported).
+*  *endpoints* - list of endpoints that should be tested at the back end.
 *  *output* - output file, to store the validation results (missing if it should be written into stdout in the terminal)
 
 There are example config files in the [examples folder](https://github.com/Open-EO/openeo-backend-validator/blob/master/openeoct/examples).
