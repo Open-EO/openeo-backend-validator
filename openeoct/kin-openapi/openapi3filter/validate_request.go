@@ -53,12 +53,12 @@ func ValidateRequest(c context.Context, input *RequestValidationInput) error {
 	}
 
 	// RequestBody
-	requestBody := operation.RequestBody
-	if requestBody != nil && !options.ExcludeRequestBody {
-		if err := ValidateRequestBody(c, input, requestBody.Value); err != nil {
-			return err
-		}
-	}
+	// requestBody := operation.RequestBody
+	// if requestBody != nil && !options.ExcludeRequestBody {
+	// 	if err := ValidateRequestBody(c, input, requestBody.Value); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	// Security
 	security := operation.Security

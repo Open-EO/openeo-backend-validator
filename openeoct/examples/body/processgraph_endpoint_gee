@@ -1,0 +1,76 @@
+{
+
+ "title": "NDVI based on Sentinel 2",
+ "description": "Deriving minimum NDVI measurements over pixel time series of Sentinel 2",
+
+ "process_graph": 
+{
+  "NDVI1": {
+    "process_id": "NDVI",
+    "result": false,
+    "arguments": {
+      "data": {
+        "from_node": "filtertemporal1"
+      }
+    }
+  },
+  "filtertemporal1": {
+    "process_id": "filter_temporal",
+    "result": false,
+    "arguments": {
+      "extent": ["2017-01-01T00:00:00Z", "2017-01-31T23:59:59Z"],
+      "data": {
+        "from_node": "filterbbox1"
+      }
+    }
+  },
+  "loadcollection1": {
+    "process_id": "load_collection",
+    "result": false,
+    "arguments": {
+      "spatial_extent": null,
+      "temporal_extent": null,
+      "id": "COPERNICUS/S2"
+    }
+  },
+  "filterbbox1": {
+    "process_id": "filter_bbox",
+    "result": false,
+    "arguments": {
+      "extent": {
+      "north": 48.320647,
+      "west": 16.138916,
+      "south": 48.1386,
+      "east": 16.524124,
+      "crs": "EPSG:4326"
+      },
+      "data": {
+        "from_node": "loadcollection1"
+      }
+    }
+  },
+  "reduce1": {
+    "process_id": "reduce",
+    "result": false,
+    "arguments": {
+      "dimension": "temporal",
+      "data": {
+        "from_node": "NDVI1"
+      },
+      "reducer": {
+        "callback": {
+          "r1": {
+            "process_id": "min",
+            "result": true,
+            "arguments": {
+              "data": {
+                "from_argument": "data"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+}

@@ -1,0 +1,18 @@
+url = "http://openeo.vgt.vito.be/openeo/"
+openapi = "openapi_0_3_1.json"
+username = ""
+password = ""
+authurl = ""
+output = "vito_v3"
+
+[endpoints]
+
+  [endpoints.endpoint1]
+  id = "endpoint1a"
+  url = "/"
+  request_type = "GET"
+
+  [endpoints.endpoint3]
+  id = "endpoint3c"
+  url = "/collections"
+  request_type = "GET"
