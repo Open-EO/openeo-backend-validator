@@ -14,7 +14,7 @@ import (
 	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3filter"
 
 	"github.com/BurntSushi/toml"
-	// "github.com/urfave/cli"
+	"github.com/urfave/cli"
 )
 
 // ErrorMessage "class"
@@ -219,7 +219,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 	// Get Response
 	body, err := ioutil.ReadAll(resp.Body)
 
-	log.Println(string(body))
+	// log.Println(string(body))
 
 	if resp.StatusCode == 401 {
 		errormsg := new(ErrorMessage)
@@ -289,40 +289,122 @@ func ReadConfig(config_file string) Config {
 
 // Testing Main function
 
+// func main() {
+
+// 	// Config file path
+// 	var config Config
+
+// 	// CLI handling
+// 	// app := cli.NewApp()
+// 	// app.Name = "openeoct"
+// 	// app.Name = "openeoct"
+// 	// app.Version = "0.1.0"
+// 	// app.Usage = "validating a back end against an openapi description file!"
+
+// 	// // add config command
+// 	// app.Commands = []cli.Command{
+// 	// 	{
+// 	// 		Name:    "config",
+// 	// 		Aliases: []string{"c"},
+// 	// 		Usage:   "load from config file",
+// 	// 		Action: func(c *cli.Context) error {
+// 	// 			//configfile = c.Args().First()
+// 	// 			config = ReadConfig(c.Args().First())
+// 	// 			//log.Println("Configfile1: ", config.Url)
+// 	// 			return nil
+// 	// 		},
+// 	// 	},
+// 	// }
+
+// 	// // run CLI
+// 	// apperr := app.Run(os.Args)
+// 	// if apperr != nil {
+// 	// 	log.Fatal(apperr)
+// 	// }
+
+// 	config = ReadConfig("examples/gee_config_v4.toml")
+
+// 	// config file read correctly
+// 	if config.Url == "" {
+// 		log.Println("Error: No config file specified")
+// 	}
+
+// 	// define back end and compliance test instance
+// 	ct := new(ComplianceTest)
+// 	ct.backend.url = config.Url
+// 	ct.apifile = config.Openapi
+
+// 	ct.username = config.Username
+// 	ct.password = config.Password
+// 	ct.authendpoint = config.Authurl
+
+// 	//	log.Println(config.Endpoints)
+
+// 	var ep_array []Endpoint
+// 	for name, ep := range config.Endpoints {
+// 		if ep.Id == "" {
+// 			ep.Id = name
+// 		}
+// 		ep_array = append(ep_array, ep)
+// 	}
+
+// 	ct.endpoints = ep_array
+
+// 	// state, err := ct.validate(config.Endpoints)
+// 	//log.Println("Result: ", state)
+// 	//if err != nil {
+// 	//		log.Println("Error: ", err.msg)
+// 	//	}
+
+// 	//	ct.endpoints = []string{"/", "/collections", "/service_types"}
+
+// 	// Run validation
+// 	result := ct.validateAll()
+
+// 	jsonString, _ := json.Marshal(result)
+
+// 	// Write to log stdout or to output file
+// 	if config.Output == "" {
+// 		log.Println("Result:", string(jsonString))
+// 	} else {
+// 		ioutil.WriteFile(config.Output, jsonString, 0644)
+// 	}
+
+// }
+
+// Main function
 func main() {
 
 	// Config file path
 	var config Config
 
 	// CLI handling
-	// app := cli.NewApp()
-	// app.Name = "openeoct"
-	// app.Name = "openeoct"
-	// app.Version = "0.1.0"
-	// app.Usage = "validating a back end against an openapi description file!"
+	app := cli.NewApp()
+	app.Name = "openeoct"
+	app.Name = "openeoct"
+	app.Version = "0.1.0"
+	app.Usage = "validating a back end against an openapi description file!"
 
-	// // add config command
-	// app.Commands = []cli.Command{
-	// 	{
-	// 		Name:    "config",
-	// 		Aliases: []string{"c"},
-	// 		Usage:   "load from config file",
-	// 		Action: func(c *cli.Context) error {
-	// 			//configfile = c.Args().First()
-	// 			config = ReadConfig(c.Args().First())
-	// 			//log.Println("Configfile1: ", config.Url)
-	// 			return nil
-	// 		},
-	// 	},
-	// }
+	// add config command
+	app.Commands = []cli.Command{
+		{
+			Name:    "config",
+			Aliases: []string{"c"},
+			Usage:   "load from config file",
+			Action: func(c *cli.Context) error {
+				//configfile = c.Args().First()
+				config = ReadConfig(c.Args().First())
+				//log.Println("Configfile1: ", config.Url)
+				return nil
+			},
+		},
+	}
 
-	// // run CLI
-	// apperr := app.Run(os.Args)
-	// if apperr != nil {
-	// 	log.Fatal(apperr)
-	// }
-
-	config = ReadConfig("examples/gee_config_v4.toml")
+	// run CLI
+	apperr := app.Run(os.Args)
+	if apperr != nil {
+		log.Fatal(apperr)
+	}
 
 	// config file read correctly
 	if config.Url == "" {
@@ -337,8 +419,6 @@ func main() {
 	ct.username = config.Username
 	ct.password = config.Password
 	ct.authendpoint = config.Authurl
-
-	//	log.Println(config.Endpoints)
 
 	var ep_array []Endpoint
 	for name, ep := range config.Endpoints {
@@ -371,83 +451,3 @@ func main() {
 	}
 
 }
-
-// Main function
-// func main() {
-
-// 	// Config file path
-// 	var config Config
-
-// 	// CLI handling
-// 	app := cli.NewApp()
-// 	app.Name = "openeoct"
-// 	app.Name = "openeoct"
-// 	app.Version = "0.1.0"
-// 	app.Usage = "validating a back end against an openapi description file!"
-
-// 	// add config command
-// 	app.Commands = []cli.Command{
-// 		{
-// 			Name:    "config",
-// 			Aliases: []string{"c"},
-// 			Usage:   "load from config file",
-// 			Action: func(c *cli.Context) error {
-// 				//configfile = c.Args().First()
-// 				config = ReadConfig(c.Args().First())
-// 				//log.Println("Configfile1: ", config.Url)
-// 				return nil
-// 			},
-// 		},
-// 	}
-
-// 	// run CLI
-// 	apperr := app.Run(os.Args)
-// 	if apperr != nil {
-// 		log.Fatal(apperr)
-// 	}
-
-// 	// config file read correctly
-// 	if config.Url == "" {
-// 		log.Println("Error: No config file specified")
-// 	}
-
-// 	// define back end and compliance test instance
-// 	ct := new(ComplianceTest)
-// 	ct.backend.url = config.Url
-// 	ct.apifile = config.Openapi
-
-// 	ct.username = config.Username
-// 	ct.password = config.Password
-// 	ct.authendpoint = config.Authurl
-
-// 	var ep_array []Endpoint
-// 	for _, endpoint := range config.Endpoints {
-
-// 		ep := Endpoint{url: endpoint, request_type: "GET"}
-
-// 		ep_array = append(ep_array, ep)
-// 	}
-
-// 	ct.endpoints = ep_array
-
-// 	// state, err := ct.validate(config.Endpoints)
-// 	//log.Println("Result: ", state)
-// 	//if err != nil {
-// 	//		log.Println("Error: ", err.msg)
-// 	//	}
-
-// 	//	ct.endpoints = []string{"/", "/collections", "/service_types"}
-
-// 	// Run validation
-// 	result := ct.validateAll()
-
-// 	jsonString, _ := json.Marshal(result)
-
-// 	// Write to log stdout or to output file
-// 	if config.Output == "" {
-// 		log.Println("Result:", string(jsonString))
-// 	} else {
-// 		ioutil.WriteFile(config.Output, jsonString, 0644)
-// 	}
-
-// }
