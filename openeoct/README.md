@@ -34,7 +34,7 @@ to specify the necessary information (e.g. back end url, username, etc):
 *  *endpoints* - list of endpoints that should be tested at the back end (ATM only GET endpoints are supported).
 *  *output* - output file, to store the validation results (missing if it should be written into stdout in the terminal)
 
-There is an example config file[(gee_config.toml)](https://github.com/Open-EO/openeo-backend-validator/blob/master/openeoct/gee_config.toml) in this folder.
+There are example config files in the [examples folder](https://github.com/Open-EO/openeo-backend-validator/blob/master/openeoct/examples).
 
 ## Usage
 
@@ -45,6 +45,6 @@ Example usage with the example `gee_config.toml` config file:
 
 (On Windows: use "`openoct.exe`" instead of "`openeoct`").
 
-The output is a JSON object that contains "VALID" for every endpoint that is valid against the openapi specification and an error message with further information for every endpoint that does not match the specification. 
+The output is a JSON object that contains "Valid" for every endpoint that is valid against the openapi specification and an error message with further information for every endpoint that does not match the specification. 
 
 Feel free to add an issue if you ran into problems, but please look first into the existing ones.
