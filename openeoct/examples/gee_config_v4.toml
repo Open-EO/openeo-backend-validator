@@ -16,23 +16,58 @@ authurl="/credentials/basic"
   request_type = "GET"
 
   [endpoints.endpoint3]
+  id = "output_formats"
+  url = "/output_formats"
+  request_type = "GET"
+
+  [endpoints.endpoint4]
+  id = "service_types"
+  url = "/service_types"
+  request_type = "GET"
+
+  [endpoints.endpoint5]
+  id = "processes"
+  url = "/processes"
+  request_type = "GET"
+
+  [endpoints.endpoint6]
+  id = "/services"
+  url = "/services"
+  request_type = "GET"
+
+  [endpoints.endpoint7]
+  id = "/files/groupX"
+  url = "/files/groupX"
+  request_type = "GET"
+
+  [endpoints.endpoint8]
+  id = "process_graphs"
+  url = "/process_graphs/"
+  request_type = "GET"
+
+  [endpoints.endpoint9]
+  id = "me"
+  url = "/me"
+  request_type = "GET"
+
+  [endpoints.endpoint10]
   id = "endpoint3c"
   url = "/collections"
   request_type = "GET"
 
-  [endpoints.endpoint4]
+  [endpoints.endpoint11]
   id = "endpoint4d"
   url = "/validation"
   request_type = "POST"
   body = "examples/body/processgraph_gee"
 
-  [endpoints.endpoint5]
+  [endpoints.endpoint12]
   id = "endpoint5"
   url = "/result"
   request_type = "POST"
   body = "examples/body/processgraph_gee"
 
-  [endpoints.endpoint6]
+  [endpoints.endpoint13]
   id = "endpoint6"
   url = "/process_graphs"
   request_type = "POST"
