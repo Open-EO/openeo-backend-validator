@@ -486,7 +486,7 @@ func (schema *Schema) validate(c context.Context, stack []*Schema) (err error) {
 			switch format {
 			case "float", "double":
 			default:
-				return unsupportedFormat(format)
+				// return unsupportedFormat(format)
 			}
 		}
 	case "integer":
@@ -494,7 +494,7 @@ func (schema *Schema) validate(c context.Context, stack []*Schema) (err error) {
 			switch format {
 			case "int32", "int64":
 			default:
-				return unsupportedFormat(format)
+				// return unsupportedFormat(format)
 			}
 		}
 	case "string":
@@ -509,7 +509,7 @@ func (schema *Schema) validate(c context.Context, stack []*Schema) (err error) {
 			case "uri", "uri-reference", "iri", "iri-reference", "uri-template":
 			case "json-pointer", "relative-json-pointer":
 			default:
-				return unsupportedFormat(format)
+				// return unsupportedFormat(format)
 			}
 		}
 	case "array":

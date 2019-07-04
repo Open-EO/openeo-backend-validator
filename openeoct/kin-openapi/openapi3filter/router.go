@@ -146,33 +146,32 @@ func (router *Router) FindRoute(method string, url *url.URL) (*Route, map[string
 	swagger := router.swagger
 
 	// Get server
-	servers := swagger.Servers
+	// servers := swagger.Servers
 	var server *openapi3.Server
 	var remainingPath string
 	var pathParams map[string]string
-	if len(servers) == 0 {
-		remainingPath = url.Path
-	} else {
-		var paramValues []string
-		server, paramValues, remainingPath = servers.MatchURL(url)
-		log.Println("Server:", server)
-		log.Println("paramValues:", paramValues)
-		log.Println("remainingPath:", remainingPath)
-		if server == nil {
-			return nil, nil, &RouteError{
-				Route: Route{
-					Swagger: swagger,
-				},
-				Reason: "Does not match any server",
-			}
-		}
-		pathParams = make(map[string]string, 8)
-		paramNames, _ := server.ParameterNames()
-		for i, value := range paramValues {
-			name := paramNames[i]
-			pathParams[name] = value
-		}
-	}
+
+	remainingPath = url.Path
+	// if len(servers) == 0 {
+	// 	remainingPath = url.Path
+	// } else {
+	// 	var paramValues []string
+	// 	server, paramValues, remainingPath = servers.MatchURL(url)
+	// 	if server == nil {
+	// 		return nil, nil, &RouteError{
+	// 			Route: Route{
+	// 				Swagger: swagger,
+	// 			},
+	// 			Reason: "Does not match any server",
+	// 		}
+	// 	}
+	// 	pathParams = make(map[string]string, 8)
+	// 	paramNames, _ := server.ParameterNames()
+	// 	for i, value := range paramValues {
+	// 		name := paramNames[i]
+	// 		pathParams[name] = value
+	// 	}
+	// }
 
 	// Get PathItem
 	root := router.node()

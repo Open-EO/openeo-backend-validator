@@ -124,15 +124,20 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 	//openapi3.DefineStringFormat("url", `^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 	//log.Println(openapi3.SchemaStringFormats)
 
+	_, err := os.Stat(ct.apifile)
+
+	// Try to read the openapi3 file
 	swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromFile(ct.apifile)
 
-	// if err := swagger.Validate(context.TODO()); err != nil {
-	// 	log.Println(err)
-	// }
+	if err != nil {
+		// openapi3 file not found, assume it is an URI
+		apiReq, _ := http.NewRequest(http.MethodGet, ct.apifile, nil)
+		swagger, err = openapi3.NewSwaggerLoader().LoadSwaggerFromURI(apiReq.URL)
+	}
 
 	if err != nil {
 		errormsg := new(ErrorMessage)
-		errormsg.msg = "Error parsing the OpenEO API file: \n" + err.Error()
+		errormsg.msg = "Error reading the openEO API, neighter file nor url found : \n" + err.Error()
 		return "Error1", errormsg
 	}
 
@@ -322,7 +327,7 @@ func ReadConfig(config_file string) Config {
 // 	// 	log.Fatal(apperr)
 // 	// }
 
-// 	config = ReadConfig("examples/gee_config_v4.toml")
+// 	config = ReadConfig("examples/gee_config_v4_external.toml")
 
 // 	// config file read correctly
 // 	if config.Url == "" {

@@ -1,0 +1,15 @@
+url="https://earthengine.openeo.org/v0.4"
+openapi="https://raw.githubusercontent.com/Open-EO/openeo-api/0.4.1/openapi.json"
+username="group1"
+password="test123"
+authurl="/credentials/basic"
+
+[endpoints]
+
+  [endpoints.endpoint1]
+  id = "endpoint1a"
+  url = "/jobs"
+  request_type = "GET"
+
+#endpoints= [ "/jobs", "/", "/collections" ]
+#output="output.json"
