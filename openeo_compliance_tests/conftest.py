@@ -3,6 +3,10 @@ pytest configuration file
 """
 
 import _pytest.config
+import pytest
+
+# Make sure asserts in helper module are rewritten to have useful feedback
+pytest.register_assert_rewrite('openeo_compliance_tests.helpers')
 
 from openeo_compliance_tests.helpers import get_backend, get_api_version
 

@@ -30,12 +30,13 @@ class ApiClient:
         assert path.startswith('/')
         timeout = kwargs.pop('timeout', self._timeout)
         response = self.s.request(method=method, url=self.backend + path, timeout=timeout, **kwargs)
-        if expect_status_code is not None:
+        if expect_status_code:
+            # TODO: allow specifying a list of status codes?
             assert response.status_code == expect_status_code
         return response
 
-    def get(self, path: str, **kwargs) -> Response:
-        return self.request(method='get', path=path, **kwargs)
+    def get(self, path: str, expect_status_code=200, **kwargs) -> Response:
+        return self.request(method='get', path=path, expect_status_code=expect_status_code, **kwargs)
 
 
 def get_backend(config: _pytest.config.Config):
