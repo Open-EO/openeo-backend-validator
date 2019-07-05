@@ -1,23 +1,11 @@
+dist: xenial   # required for Python >= 3.7
 language: python
 python:
   - "3.6"
-matrix:
-  include:
-  - name: "EARTHENGINE-0.3.1"
-    env: BACKEND=https://earthengine.openeo.org/v0.3 APIVERSION=0.3.1
-  - name: "VITO-0.3.1"
-    env: BACKEND=http://openeo.vgt.vito.be/openeo/0.3.1 APIVERSION=0.3.1
-  - name: "VITO-0.4.0"
-    env: BACKEND=http://openeo.vgt.vito.be/openeo/0.4.0 APIVERSION=0.4.0
-  - name: "EURAC-0.3.1"
-    env: BACKEND=http://saocompute.eurac.edu/openEO_0_3_0/openeo APIVERSION=0.3.1
-# command to install dependencies
-before_install:
-  - cd openeo_compliance_tests
+  - "3.7"
 install:
-  - pip install -r requirements.txt
+  - pip install -r openeo_compliance_tests/requirements.txt
   - pip freeze
-# command to run tests
 script:
   - cd openeo_compliance_tests
-  - pytest --backend $BACKEND --api-version $APIVERSION
+  - pytest openeo_compliance_tests/test_helpers.py
