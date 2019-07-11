@@ -4,7 +4,7 @@ Reusable test fixtures
 
 import pytest
 
-from openeo_compliance_tests.helpers import ApiClient, ApiSchemaValidator, get_api_version
+from openeo_compliance_tests.helpers import ApiClient, get_api_version, OpenApiSpec, PurePythonValidator
 
 
 @pytest.fixture
@@ -19,6 +19,10 @@ def api_version(request):
 
 
 @pytest.fixture
-def schema(api_version) -> ApiSchemaValidator:
-    """Pytest fixture for expected API schema for desired version"""
-    return ApiSchemaValidator.from_version(api_version)
+def spec(api_version: str):
+    return OpenApiSpec.from_version(api_version)
+
+
+@pytest.fixture
+def validator(spec: OpenApiSpec):
+    return PurePythonValidator(spec)

@@ -1,10 +1,14 @@
+import abc
 import json
-import pkgutil
 import re
+from pathlib import Path
+from typing import Union, KeysView
 from urllib.parse import urlparse
 
 import _pytest.config
 import jsonschema
+import openapi_schema_to_json_schema
+import pkg_resources
 from requests import Session, Response
 
 
@@ -21,18 +25,16 @@ class ApiClient:
         parsed = urlparse(self.backend)
         return '{s}://{d}'.format(s=parsed.scheme, d=parsed.netloc)
 
-    def request(self, method: str, path: str, **kwargs):
+    def request(self, method: str, path: str, expect_status_code=200, **kwargs):
         assert path.startswith('/')
         timeout = kwargs.pop('timeout', self._timeout)
-        return self.s.request(method=method, url=self.backend + path, timeout=timeout, **kwargs)
+        response = self.s.request(method=method, url=self.backend + path, timeout=timeout, **kwargs)
+        if expect_status_code is not None:
+            assert response.status_code == expect_status_code
+        return response
 
     def get(self, path: str, **kwargs) -> Response:
         return self.request(method='get', path=path, **kwargs)
-
-    def get_json(self, path: str, **kwargs) -> dict:
-        r = self.get(path, **kwargs)
-        r.raise_for_status()
-        return r.json()
 
 
 def get_api_version(config: _pytest.config.Config):
@@ -55,44 +57,101 @@ class ResponseNotInSchema(KeyError):
     pass
 
 
-class ApiSchemaValidator:
-    """
-    Helper class to load an OpenEo API schema definition
-    and build a validator for desired subschema.
-    """
+class OpenApiSpec:
+    """Helper to inspect and query OpenAPI spec"""
 
-    def __init__(self, schema: dict):
-        assert 'paths' in schema
-        self._schema = schema
+    def __init__(self, spec: Union[Path, dict]):
+        """Load OpenAPI spec from file path or given as a dict (handy for testing)"""
+        if isinstance(spec, Path):
+            self._path = spec
+            with spec.open(encoding='utf-8') as f:
+                self._spec = json.load(f)
+        elif isinstance(spec, dict):
+            self._path = None
+            self._spec = spec
+        else:
+            raise ValueError("Don't know how to handle {s!r}".format(s=spec))
 
     @classmethod
-    def from_filename(cls, name='openeo-api-0.4.0.json') -> 'ApiSchemaValidator':
-        """Load ApiSchema from schemas folder by filename"""
-        schema_json = pkgutil.get_data('openeo_compliance_tests', 'schemas/{n}'.format(n=name)).decode('utf-8')
-        return cls(json.loads(schema_json))
+    def from_version(cls, version: str = '0.4.0') -> 'OpenApiSpec':
+        p = pkg_resources.resource_filename('openeo_compliance_tests', 'schemas/openeo-api-{v}.json'.format(v=version))
+        return cls(Path(p))
 
-    @classmethod
-    def from_version(cls, version='0.4.0') -> 'ApiSchemaValidator':
-        """Load ApiSchema from schemas folder by API version."""
-        return cls.from_filename('openeo-api-{v}.json'.format(v=version))
+    @property
+    def spec(self) -> dict:
+        return self._spec
 
-    def _get_validator(self, expected_schema: dict) -> jsonschema.Draft4Validator:
-        resolver = jsonschema.RefResolver.from_schema(self._schema)
-        # OpenApi 3 is closest to JSON Schema Draft 4
-        validator = jsonschema.Draft4Validator(expected_schema, resolver=resolver)
-        return validator
+    @property
+    def path(self) -> Path:
+        if self._path is None:
+            raise RuntimeError('Real path is not known')
+        return self._path
 
-    def get_response_validator(self, path: str = '/', operation: str = 'get', code: str = '200',
-                               media_type: str = 'application/json', ) -> jsonschema.Draft4Validator:
-        """Helper to get the response schema of a given request path"""
+    def get_paths(self) -> KeysView:
+        return self._spec['paths'].keys()
+
+    def get_path_schema(self, path: str) -> dict:
+        return self._spec['paths'][path]
+
+
+class OpenApiValidator(abc.ABC):
+    """
+    Base class for OpenAPI validators.
+
+    Subclasses have to implement `validate_response`, which raises an exception when something is wrong
+    """
+
+    def __init__(self, spec: OpenApiSpec):
+        self.api_spec = spec
+
+    @abc.abstractmethod
+    def validate_response(self, path: str, response: Response, method: str = 'get'):
+        pass
+
+
+class PurePythonValidator(OpenApiValidator):
+    """
+    Pure Python implementation of OpenAPI validation.
+
+    Implemented using combination of `jsonschema` and `openapi_schema_to_json_schema` modules
+    due to current lack of a dedicated OpenApi validation module
+    """
+
+    class _OpenApiResolver(jsonschema.RefResolver):
+        """Custom resolver for OpenApi style $ref references"""
+
+        def resolve(self, ref):
+            url, schema = super().resolve(ref)
+            # Handle JSONschema/OpenAPI conversions in resolved schema
+            return url, openapi_schema_to_json_schema.to_json_schema(schema)
+
+    def validate_response(self, path: str, response: Response, method: str = 'get'):
+        # Get schema for given path
         try:
-            schema = self._schema['paths'][path][operation]['responses'][code]['content'][media_type]['schema']
+            path_spec = self.api_spec.get_path_schema(path)
+            status = str(response.status_code)
+            schema = path_spec[method]['responses'][status]['content']['application/json']['schema']
         except KeyError as e:
             raise ResponseNotInSchema(*e.args) from None
-        return self._get_validator(schema)
 
-    def get_paths(self):
-        return self._schema['paths'].keys()
+        # OpenApi 3 is closest to JSON Schema Draft, combined with some
+        # conversions handled by openapi_schema_to_json_schema (also in resolver).
+        resolver = self._OpenApiResolver.from_schema(schema=self.api_spec.spec)
+        validator = jsonschema.Draft4Validator(
+            schema=openapi_schema_to_json_schema.to_json_schema(schema),
+            resolver=resolver
+        )
+        return validator.validate(instance=response.json())
 
-    def get_path_schema(self, path: str):
-        return self._schema['paths'][path]
+
+class GoToolValidator(OpenApiValidator):
+    """
+    Validator based on custom `openeoct` validation tool in Go
+    """
+
+    def validate_response(self, path: str, response: Response, method: str = 'get'):
+        # TODO
+        spec_file_path = str(self.api_spec.path)
+        status_code = response.status_code
+        headers = response.headers
+        body = response.text
