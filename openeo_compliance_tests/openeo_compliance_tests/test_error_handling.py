@@ -33,7 +33,7 @@ def test_get_unauthorized(client: ApiClient, unauthorized_get_path: str):
 
     https://open-eo.github.io/openeo-api/errors/#account_management
     """
-    response = client.get(unauthorized_get_path)
+    response = client.get(unauthorized_get_path, expect_status_code=None)
     if response.status_code == requests.codes.not_found:
         pytest.skip('{p} not found'.format(p=unauthorized_get_path))
     assert response.status_code == requests.codes.unauthorized
@@ -45,8 +45,7 @@ def test_get_unauthorized(client: ApiClient, unauthorized_get_path: str):
 ])
 def test_invalid_path(client: ApiClient, path: str, http_code: int, error_code: str):
     """Test GET request to invalid path"""
-    r = client.get(path=path)
-    assert r.status_code == http_code
+    r = client.get(path=path, expect_status_code=http_code)
     error = r.json()
     assert isinstance(error, dict)
     assert 'code' in error

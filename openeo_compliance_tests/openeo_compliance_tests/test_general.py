@@ -16,7 +16,7 @@ def test_get_generic(client: ApiClient, validator: OpenApiValidator, api_version
     Generic validation of simple get requests
     """
     try:
-        response = client.get(path=path)
+        response = client.get(path=path, expect_status_code=200)
         validator.validate_response(path=path, response=response, method='get')
     except ResponseNotInSchema:
         # Automatically skip paths that are not in tested API version (e.g. when validating against older schemas)

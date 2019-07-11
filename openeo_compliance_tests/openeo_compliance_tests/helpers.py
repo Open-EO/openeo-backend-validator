@@ -18,6 +18,7 @@ class ApiClient:
 
     def __init__(self, backend: str):
         self.s = Session()
+        assert backend is not None
         self.backend = backend.rstrip('/')
 
     @property
@@ -29,27 +30,42 @@ class ApiClient:
         assert path.startswith('/')
         timeout = kwargs.pop('timeout', self._timeout)
         response = self.s.request(method=method, url=self.backend + path, timeout=timeout, **kwargs)
-        if expect_status_code is not None:
+        if expect_status_code:
+            # TODO: allow specifying a list of status codes?
             assert response.status_code == expect_status_code
         return response
 
-    def get(self, path: str, **kwargs) -> Response:
-        return self.request(method='get', path=path, **kwargs)
+    def get(self, path: str, expect_status_code=200, **kwargs) -> Response:
+        return self.request(method='get', path=path, expect_status_code=expect_status_code, **kwargs)
+
+
+def get_backend(config: _pytest.config.Config):
+    """
+    Get OpenEo backend root URL as specified through `--backend` command line option.
+    Note: will return None when no backend is specified.
+    """
+    return config.getoption('--backend')
 
 
 def get_api_version(config: _pytest.config.Config):
-    """Get/Guess API version from pytest config"""
+    """
+    Get/Guess API version from command line options (`--api-version` or `--backend`).
+    Note: will return None when no API version information.
+    """
     version = config.getoption('--api-version')
     if version:
         if not re.match(r'^\d+\.\d+\.\d+$', version):
             raise Exception('Invalid API version: {v!r}'.format(v=version))
     else:
         # Try to guess from backend url
-        backend = config.getoption("--backend")
-        match = re.search(r'(\d+)[._-](\d+)[._-](\d+)', backend)
-        if not match:
-            raise Exception('Failed to guess API version from backend url {b}.'.format(b=backend))
-        version = '.'.join(match.groups())
+        backend = get_backend(config)
+        if backend:
+            match = re.search(r'(\d+)[._-](\d+)[._-](\d+)', backend)
+            if not match:
+                raise Exception('Failed to guess API version from backend url {b}.'.format(b=backend))
+            version = '.'.join(match.groups())
+        else:
+            return None
     return version
 
 
@@ -74,6 +90,7 @@ class OpenApiSpec:
 
     @classmethod
     def from_version(cls, version: str = '0.4.0') -> 'OpenApiSpec':
+        assert version is not None
         p = pkg_resources.resource_filename('openeo_compliance_tests', 'schemas/openeo-api-{v}.json'.format(v=version))
         return cls(Path(p))
 
