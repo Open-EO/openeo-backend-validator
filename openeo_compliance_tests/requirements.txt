@@ -2,5 +2,5 @@ requests
 pytest
 attrs>=17.4.0
 jsonschema
-openapi_schema_to_json_schema
+py-openapi-schema-to-json-schema
 pytest_html
