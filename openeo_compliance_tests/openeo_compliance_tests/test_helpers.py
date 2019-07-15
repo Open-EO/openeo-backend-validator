@@ -7,7 +7,7 @@ import jsonschema
 import pytest
 from requests import Response
 
-from openeo_compliance_tests.helpers import OpenApiSpec, PurePythonValidator, ResponseNotInSchema
+from openeo_compliance_tests.helpers import OpenApiSpec, PurePythonValidator, ResponseNotInSchema, Capabilities
 
 TEST_SCHEMA = {
     "openapi": "3.0.2",
@@ -161,3 +161,16 @@ class TestPurePythonValidator:
         expectation = nullcontext() if valid else pytest.raises(jsonschema.ValidationError)
         with expectation:
             validator.validate_response(path='/with_ref', method='get', response=resp(body=body))
+
+
+def test_capabilities_has_endpoint():
+    capabilities = Capabilities({
+        'endpoints': [
+            {'path': '/collections', 'methods': ['GET']},
+        ]
+    })
+    assert capabilities.has_endpoint('/collections')
+    assert capabilities.has_endpoint('/collections', method='get')
+    assert capabilities.has_endpoint('/collections', method='GET')
+    assert not capabilities.has_endpoint('/collections', method='POST')
+    assert not capabilities.has_endpoint('/services', method='GET')

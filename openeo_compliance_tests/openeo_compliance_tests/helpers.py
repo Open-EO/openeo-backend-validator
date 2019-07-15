@@ -172,3 +172,16 @@ class GoToolValidator(OpenApiValidator):
         status_code = response.status_code
         headers = response.headers
         body = response.text
+
+
+class Capabilities:
+    """Helper to query the capabilities of a backend."""
+
+    def __init__(self, capabilities: dict):
+        self.capabilities = capabilities
+
+    def has_endpoint(self, endpoint, method='get'):
+        return any(
+            e['path'] == endpoint and method.lower() in set(m.lower() for m in e['methods'])
+            for e in self.capabilities['endpoints']
+        )
