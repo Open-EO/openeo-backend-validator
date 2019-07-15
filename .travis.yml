@@ -3,8 +3,8 @@ python:
   - "3.6"
 matrix:
   include:
-  - name: "EARTHENGINE-0.3.1"
-    env: BACKEND=https://earthengine.openeo.org/v0.3 APIVERSION=0.3.1
+  - name: "EARTHENGINE-0.4"
+    env: BACKEND=https://earthengine.openeo.org/v0.4 APIVERSION=0.4.2
   - name: "VITO-0.3.1"
     env: BACKEND=http://openeo.vgt.vito.be/openeo/0.3.1 APIVERSION=0.3.1
   - name: "VITO-0.4.0"
