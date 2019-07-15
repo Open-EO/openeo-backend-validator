@@ -1,20 +1,36 @@
+import json
+
 import pytest
 
-from openeo_compliance_tests.helpers import ApiClient, ResponseNotInSchema, OpenApiValidator, OpenApiSpec
+from openeo_compliance_tests.helpers import ApiClient, ResponseNotInSchema, OpenApiValidator, OpenApiSpec, Capabilities
+
+
+def test_capabilities(client: ApiClient, validator: OpenApiValidator):
+    response = client.get(path='/', expect_status_code=200)
+    validator.validate_response(path='/', response=response, method='get')
+
+
+@pytest.fixture
+def capabilities(client: ApiClient) -> Capabilities:
+    """Fixture for helper to query the capabilities of the backend."""
+    response = client.get(path='/', expect_status_code=200)
+    return Capabilities(json.loads(response.text))
 
 
 @pytest.mark.parametrize("path", [
-    '/',
     '/collections',
     '/processes',
     '/output_formats',
     '/udf_runtimes',
     '/service_types',
 ])
-def test_get_generic(client: ApiClient, validator: OpenApiValidator, api_version: str, path: str):
+def test_get_generic(client: ApiClient, validator: OpenApiValidator, api_version: str, path: str,
+                     capabilities: Capabilities):
     """
     Generic validation of simple get requests
     """
+    if not capabilities.has_endpoint(path):
+        pytest.skip('Path {p!r} not supported by backend'.format(p=path))
     try:
         response = client.get(path=path, expect_status_code=200)
         validator.validate_response(path=path, response=response, method='get')
@@ -40,8 +56,9 @@ def test_collections_collection_id(client: ApiClient, spec: OpenApiSpec, validat
         validator.validate_response(path=path, response=response, method='get')
 
 
-def test_well_known_openeo(client, validator, api_version):
+def test_well_known_openeo(client, validator):
     # Special case: /.well-known/openeo should be available directly under domain
     path = '/.well-known/openeo'
     client = ApiClient(backend=client.domain)
-    test_get_generic(client=client, validator=validator, api_version=api_version, path=path)
+    response = client.get(path=path, expect_status_code=200)
+    validator.validate_response(path=path, response=response, method='get')
