@@ -18,13 +18,14 @@ def csv_to_list(s: str):
 @pytest.mark.parametrize("path", [
     '/',
     '/collections',
+    '/processes'
     # TODO: more endpoints?
 ])
 def test_options_request(client: ApiClient, path: str):
     origin = 'http://example.com'
-    r = client.request(method='options', path=path, headers={'Origin': origin})
+    r = client.request(method='options', path=path, expect_status_code = 204, headers={'Origin': origin})
 
-    assert r.status_code == requests.codes.no_content  # 204
+    assert r.status_code == 204
 
     # Note: r.headers is CaseInsensitiveDict
     assert r.headers['access-control-allow-origin'] == origin
