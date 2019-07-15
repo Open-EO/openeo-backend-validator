@@ -40,4 +40,5 @@ def test_options_request(client: ApiClient, path: str):
     expose_headers = set(csv_to_list(r.headers['access-control-expose-headers']))
     assert {'location', 'openeo-identifier', 'openeo-costs'}.issubset(expose_headers)
 
-    assert r.headers['content-type'] == 'application/json'
+    # This header SHOULD be available, but it is not mandatory. So don't fail if it doesn't exist.
+    # assert r.headers['content-type'] == 'application/json'
