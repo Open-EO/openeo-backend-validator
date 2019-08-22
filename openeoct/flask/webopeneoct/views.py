@@ -3,10 +3,7 @@ from webopeneoct import app, db
 from flask import request, flash, redirect, url_for, render_template
 from .forms import BackendForm, EndpointForm
 from .models import Backend, Endpoint
-from .service import run_validation, create_configfile
-
-
-CONFIG_PATH = "gee_config.toml"
+from .service import run_validation, create_configfile, run_pytest_validation
 
 
 @app.route('/')
@@ -192,13 +189,40 @@ def backend_validate(be_id):
 
     form.set_backend(backend)
 
-   # if backend.output == "result_None.json":
-   #     backend.output = "result_{}.json".format(backend.id)
-   #     db.session.commit()
+    if backend.output == "result_None.json":
+        backend.output = "result_{}.json".format(backend.id)
+        db.session.commit()
 
     results = run_validation(be_id)
-
+    #results = run_pytest_validation(be_id)
     return render_template('backend_validate.html', form=form, results=results)
+
+@app.route('/backend/validatepytest/<be_id>')
+def backend_validate_pytest(be_id):
+    """
+    Validates all endpoints of a backend with the pytest framework.
+
+    Parameters
+    ----------
+    be_id : int
+        ID of backend
+    """
+    backend = Backend.query.filter(Backend.id == be_id).first()
+
+    form = BackendForm(request.form)
+
+    form.set_backend(backend)
+
+    if backend.output == "result_None.json":
+        backend.output = "result_{}.json".format(backend.id)
+        db.session.commit()
+
+    #results = run_validation(be_id)
+    result_path = run_pytest_validation(be_id)
+    print(result_path)
+    if result_path:
+        return redirect(url_for('static', filename=result_path)) # return render_template('backend_validate_pytest.html', form=form, result_path=result_path)
+
 
 
 @app.route('/endpoint/list')

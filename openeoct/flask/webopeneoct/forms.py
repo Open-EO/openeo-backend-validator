@@ -1,5 +1,6 @@
 from wtforms import Form, BooleanField, StringField, PasswordField, validators, SelectField, TextAreaField, IntegerField
 from wtforms.validators import Required
+from wtforms.widgets import PasswordInput
 from .models import Backend, Endpoint
 import os
 
@@ -33,7 +34,7 @@ class BackendForm(Form):
     output = StringField('Output')
     authurl = StringField('Authentication URL')
     username = StringField('Authentication Username')
-    password = StringField('Authentication Password')
+    password = StringField('Authentication Password', widget=PasswordInput(hide_value=False))
 
     def set_backend(self, backend):
         """

@@ -1,10 +1,15 @@
 from .models import Backend, Endpoint, Result
+from webopeneoct import db
 import json
 import toml
 import subprocess
 import os
 import time
+from shutil import copyfile
+
 WORKING_DIR = "../.."
+PYTEST_DIR = "../../../openeo_compliance_tests/"
+PYTEST_CMD = "/home/bgoesswe/.pyenv/versions/miniconda3-latest/envs/openeoct/bin/pytest"
 
 def create_configfile(be_id):
     """
@@ -47,6 +52,10 @@ def create_configfile(be_id):
 
     #openapi_file = "openapi_{}.json".format(backend.openapi)
 
+    if backend.output == "result_None.json":
+        backend.output = "result_{}.json".format(be_id)
+        db.session.commit()
+
     toml_dict = {
         "url": backend.url,
         "openapi": backend.openapi,
@@ -83,16 +92,24 @@ def read_result(be_id):
     time.sleep(1)
     backend = Backend.query.filter(Backend.id == be_id).first()
 
-    result_file = open("{}/{}".format(WORKING_DIR, backend.output), "r")
+    if backend.output == "result_None.json":
+        backend.output = "result_{}.json".format(backend.id)
+        db.session.commit()
 
-    result = json.loads(result_file.read())
+    result_path = "{}/{}".format(WORKING_DIR, backend.output)
 
-    result_list = []
+    if os.path.isfile(result_path):
+        result_file = open("{}/{}".format(WORKING_DIR, backend.output), "r")
 
-    for key, val in result.items():
-        result_list.append(Result(key, val))
+        result = json.loads(result_file.read())
 
-    return result_list
+        result_list = []
+
+        for key, val in result.items():
+            result_list.append(Result(key, val))
+
+        return result_list
+    return None
 
 
 def run_validation(be_id):
@@ -122,4 +139,42 @@ def run_validation(be_id):
     return read_result(be_id)
 
 
+def run_pytest_validation(be_id):
 
+    backend = Backend.query.filter(Backend.id == be_id).first()
+
+    #cmd = [PYTEST_CMD, '--backend', backend.url, '--html', 'report_{}.html'.format(be_id)]
+    #cmd = ['ls']
+    api_version = "0.4.2"
+    cmd = "{} --backend {} " \
+          "--html report_{}.html --api-version {}".format(PYTEST_CMD, backend.url, be_id, api_version)
+    #print(cmd)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=PYTEST_DIR, shell=True)
+    #py.test.cmdline.main(["--backend {}".format(backend.url), "--html report_{}.html".format(be_id)])
+    #pytest.main()
+
+    out, err = p.communicate()
+    print("Error: {}".format(err))
+    print("Output: {}".format(out))
+    if len(err) != 0:
+        return None
+
+    copyfile(get_pytest_path(be_id), get_pytest_static_path(be_id))
+
+    return "report_{}.html".format(be_id)
+
+
+def get_pytest_path(be_id):
+
+    result_path = os.path.join(PYTEST_DIR, "report_{}.html".format(be_id))
+    result_path = os.path.abspath(result_path)
+    if os.path.isfile(result_path):
+        return result_path
+    else:
+        return None
+
+def get_pytest_static_path(be_id):
+    result_path = os.path.abspath("static/report_{}.html".format(be_id))
+    #result_path = os.path.join(PYTEST_DIR, "static/report_{}.html".format(be_id))
+    #result_path = os.path.abspath(result_path)
+    return result_path

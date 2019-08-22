@@ -25,38 +25,10 @@
 </head>
 <body>
 
+<div>
+    <embed src="{{result_path}}">
+</div>
 
-<div class="container">
-  <div class="mt-4">
-      <h2>{{ form.name.data }}</h2>
-      <h3>{{ form.url.data }}</h3>
-  </div>
-  <div class="mt-4">
-  {% if results %}
-  <table class="table table-condensed" id="resultlist">
-        <thead>
-          <tr>
-            <th>Endpoint</th>
-            <th>Raw Result</th>
-            <th>Success</th>
-          </tr>
-        </thead>
-        <tbody>
-            {% for result in results %}
-            <tr>
-                <td>{{ result.endpoint }}</td>
-                <td>{{ result.value }}</td>
-                {% if result.success == True %}
-                <td><span class="glyphicon glyphicon-ok" style="color:green"></span></td>
-                {% else %}
-                <td><span class="glyphicon glyphicon-remove" style="color:red"></span></td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </tbody>
-</table>
-  {% endif %}
-  </div></div>
 <div class="text-center">
     <button type="button" onclick="window.location.href='{{ url_for( 'backend_edit', be_id=form.id.data ) }}';">Edit</button>
     <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
