@@ -12,7 +12,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///' + os.path.join(basedir, 'op
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db = SQLAlchemy(app)
 
-from webopeneoct import views, models
+from openeoct.flask.webopeneoct import views, models
 
 # needs to be executed in the first time, to create the sqlite database
-#db.create_all()
+# db.create_all()

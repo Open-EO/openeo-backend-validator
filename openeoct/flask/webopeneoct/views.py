@@ -1,9 +1,9 @@
 
-from webopeneoct import app, db
+from openeoct.flask.webopeneoct import app, db
 from flask import request, flash, redirect, url_for, render_template
 from .forms import BackendForm, EndpointForm
 from .models import Backend, Endpoint
-from .service import run_validation, create_configfile, run_pytest_validation
+from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints
 
 
 @app.route('/')
@@ -74,8 +74,29 @@ def backend_register():
 
         return redirect(url_for('home'))
 
-
     return render_template('backend_register.html', form=form, endpoints=None)
+
+
+@app.route('/backend/gen_get_endpoints/<be_id>', methods=['GET'])
+def backend_gen_get_endpoints(be_id):
+    """
+    Generates an endpoint in the config file for each endpoint listed in the capabilities page of the backend.
+    If an endpoint does already exists, it is not overwritten but ignored.
+    """
+    gen_endpoints(be_id)
+
+    return redirect(url_for('backend_edit', be_id=be_id))
+
+
+@app.route('/backend/gen_all_endpoints/<be_id>', methods=['GET'])
+def backend_gen_all_endpoints(be_id):
+    """
+    Generates an endpoint in the config file for each endpoint listed in the capabilities page of the backend.
+    If an endpoint does already exists, it is not overwritten but ignored.
+    """
+    gen_endpoints(be_id, re_types=["GET", "POST", "PUT", "DELETE", "PATCH"], leave_ids=False)
+
+    return redirect(url_for('backend_edit', be_id=be_id))
 
 
 @app.route('/endpoint/register', methods=['GET', 'POST'], defaults={'ep_id': None})
@@ -116,7 +137,6 @@ def endpoint_register(ep_id=None):
             endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
             if endpoint:
                 form.set_endpoint(endpoint)
-
 
     return render_template('endpoint_register.html', form=form)
 
@@ -197,6 +217,7 @@ def backend_validate(be_id):
     #results = run_pytest_validation(be_id)
     return render_template('backend_validate.html', form=form, results=results)
 
+
 @app.route('/backend/validatepytest/<be_id>')
 def backend_validate_pytest(be_id):
     """
@@ -222,7 +243,6 @@ def backend_validate_pytest(be_id):
     print(result_path)
     if result_path:
         return redirect(url_for('static', filename=result_path)) # return render_template('backend_validate_pytest.html', form=form, result_path=result_path)
-
 
 
 @app.route('/endpoint/list')

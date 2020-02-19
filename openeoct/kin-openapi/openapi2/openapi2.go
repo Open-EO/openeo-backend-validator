@@ -9,8 +9,9 @@ package openapi2
 
 import (
 	"fmt"
+	"net/http"
 
-	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
+	"github.com/getkin/kin-openapi/openapi3"
 )
 
 type Swagger struct {
@@ -57,44 +58,44 @@ type PathItem struct {
 func (pathItem *PathItem) Operations() map[string]*Operation {
 	operations := make(map[string]*Operation, 8)
 	if v := pathItem.Delete; v != nil {
-		operations["DELETE"] = v
+		operations[http.MethodDelete] = v
 	}
 	if v := pathItem.Get; v != nil {
-		operations["GET"] = v
+		operations[http.MethodGet] = v
 	}
 	if v := pathItem.Head; v != nil {
-		operations["HEAD"] = v
+		operations[http.MethodHead] = v
 	}
 	if v := pathItem.Options; v != nil {
-		operations["OPTIONS"] = v
+		operations[http.MethodOptions] = v
 	}
 	if v := pathItem.Patch; v != nil {
-		operations["PATCH"] = v
+		operations[http.MethodPatch] = v
 	}
 	if v := pathItem.Post; v != nil {
-		operations["POST"] = v
+		operations[http.MethodPost] = v
 	}
 	if v := pathItem.Put; v != nil {
-		operations["PUT"] = v
+		operations[http.MethodPut] = v
 	}
 	return operations
 }
 
 func (pathItem *PathItem) GetOperation(method string) *Operation {
 	switch method {
-	case "DELETE":
+	case http.MethodDelete:
 		return pathItem.Delete
-	case "GET":
+	case http.MethodGet:
 		return pathItem.Get
-	case "HEAD":
+	case http.MethodHead:
 		return pathItem.Head
-	case "OPTIONS":
+	case http.MethodOptions:
 		return pathItem.Options
-	case "PATCH":
+	case http.MethodPatch:
 		return pathItem.Patch
-	case "POST":
+	case http.MethodPost:
 		return pathItem.Post
-	case "PUT":
+	case http.MethodPut:
 		return pathItem.Put
 	default:
 		panic(fmt.Errorf("Unsupported HTTP method '%s'", method))
@@ -103,19 +104,19 @@ func (pathItem *PathItem) GetOperation(method string) *Operation {
 
 func (pathItem *PathItem) SetOperation(method string, operation *Operation) {
 	switch method {
-	case "DELETE":
+	case http.MethodDelete:
 		pathItem.Delete = operation
-	case "GET":
+	case http.MethodGet:
 		pathItem.Get = operation
-	case "HEAD":
+	case http.MethodHead:
 		pathItem.Head = operation
-	case "OPTIONS":
+	case http.MethodOptions:
 		pathItem.Options = operation
-	case "PATCH":
+	case http.MethodPatch:
 		pathItem.Patch = operation
-	case "POST":
+	case http.MethodPost:
 		pathItem.Post = operation
-	case "PUT":
+	case http.MethodPut:
 		pathItem.Put = operation
 	default:
 		panic(fmt.Errorf("Unsupported HTTP method '%s'", method))
@@ -129,7 +130,7 @@ type Operation struct {
 	Tags         []string               `json:"tags,omitempty"`
 	OperationID  string                 `json:"operationId,omitempty"`
 	Parameters   Parameters             `json:"parameters,omitempty"`
-	Responses    map[string]*Response   `json:"responses,omitempty"`
+	Responses    map[string]*Response   `json:"responses"`
 	Consumes     []string               `json:"consumes,omitempty"`
 	Produces     []string               `json:"produces,omitempty"`
 	Security     *SecurityRequirements  `json:"security,omitempty"`
@@ -155,6 +156,10 @@ type Parameter struct {
 	MinLength    uint64              `json:"minLength,omitempty"`
 	MaxLength    *uint64             `json:"maxLength,omitempty"`
 	Pattern      string              `json:"pattern,omitempty"`
+	Items        *openapi3.SchemaRef `json:"items,omitempty"`
+	MinItems     uint64              `json:"minItems,omitempty"`
+	MaxItems     *uint64             `json:"maxItems,omitempty"`
+	Default      interface{}         `json:"default,omitempty"`
 }
 
 type Response struct {

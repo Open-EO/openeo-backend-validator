@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const addr = "localhost:7965"
+
 func TestLoadYAML(t *testing.T) {
 	spec := []byte(`
 openapi: 3.0.0
@@ -54,7 +56,7 @@ paths:
 `)
 
 	loader := openapi3.NewSwaggerLoader()
-	doc, err := loader.LoadSwaggerFromYAMLData(spec)
+	doc, err := loader.LoadSwaggerFromData(spec)
 	require.NoError(t, err)
 	require.Equal(t, "An API", doc.Info.Title)
 	require.Equal(t, 2, len(doc.Components.Schemas))
@@ -77,7 +79,7 @@ func ExampleSwaggerLoader() {
 }
 
 func TestResolveSchemaRef(t *testing.T) {
-	source := []byte(`{"info":{"description":"An API"},"components":{"schemas":{"B":{"type":"string"},"A":{"allOf":[{"$ref":"#/components/schemas/B"}]}}}}`)
+	source := []byte(`{"openapi":"3.0.0","info":{"title":"MyAPI","version":"0.1",description":"An API"},"paths":{},"components":{"schemas":{"B":{"type":"string"},"A":{"allOf":[{"$ref":"#/components/schemas/B"}]}}}}`)
 	loader := openapi3.NewSwaggerLoader()
 	doc, err := loader.LoadSwaggerFromData(source)
 	require.NoError(t, err)
@@ -90,12 +92,12 @@ func TestResolveSchemaRef(t *testing.T) {
 }
 
 func TestResolveSchemaRefWithNullSchemaRef(t *testing.T) {
-	source := []byte(`{"info":{"description":"An API"},"paths":{"/foo":{"post":{"requestBody":{"content":{"application/json":{"schema":null}}}}}}}`)
+	source := []byte(`{"openapi":"3.0.0","info":{"title":"MyAPI","version":"0.1","description":"An API"},"paths":{"/foo":{"post":{"requestBody":{"content":{"application/json":{"schema":null}}}}}}}`)
 	loader := openapi3.NewSwaggerLoader()
 	doc, err := loader.LoadSwaggerFromData(source)
 	require.NoError(t, err)
 	err = doc.Validate(loader.Context)
-	require.EqualError(t, err, "Found unresolved ref: ''")
+	require.EqualError(t, err, "Error when validating Paths: Found unresolved ref: ''")
 }
 
 func TestResolveResponseExampleRef(t *testing.T) {
@@ -121,7 +123,7 @@ paths:
                 test:
                   $ref: '#/components/examples/test'`)
 	loader := openapi3.NewSwaggerLoader()
-	doc, err := loader.LoadSwaggerFromYAMLData(source)
+	doc, err := loader.LoadSwaggerFromData(source)
 	require.NoError(t, err)
 
 	err = doc.Validate(loader.Context)
@@ -166,10 +168,10 @@ func TestResolveSchemaExternalRef(t *testing.T) {
 	rootLocation := &url.URL{Scheme: "http", Host: "example.com", Path: "spec.json"}
 	externalLocation := &url.URL{Scheme: "http", Host: "example.com", Path: "external.json"}
 	rootSpec := []byte(fmt.Sprintf(
-		`{"info":{"description":"An API"},"components":{"schemas":{"Root":{"allOf":[{"$ref":"%s#/components/schemas/External"}]}}}}`,
+		`{"openapi":"3.0.0","info":{"title":"MyAPI","version":"0.1","description":"An API"},"paths":{},"components":{"schemas":{"Root":{"allOf":[{"$ref":"%s#/components/schemas/External"}]}}}}`,
 		externalLocation.String(),
 	))
-	externalSpec := []byte(`{"info":{"description":"External Spec"},"components":{"schemas":{"External":{"type":"string"}}}}`)
+	externalSpec := []byte(`{"openapi":"3.0.0","info":{"title":"MyAPI","version":"0.1","description":"External Spec"},"paths":{},"components":{"schemas":{"External":{"type":"string"}}}}`)
 	multipleSourceLoader := &multipleSourceSwaggerLoaderExample{
 		Sources: []*sourceExample{
 			{
@@ -222,7 +224,7 @@ paths:
 `)
 
 	loader := openapi3.NewSwaggerLoader()
-	_, err := loader.LoadSwaggerFromYAMLData(spec)
+	_, err := loader.LoadSwaggerFromData(spec)
 	require.Error(t, err)
 }
 
@@ -250,7 +252,7 @@ paths:
 `)
 
 	loader := openapi3.NewSwaggerLoader()
-	swagger, err := loader.LoadSwaggerFromYAMLData(spec)
+	swagger, err := loader.LoadSwaggerFromData(spec)
 	require.NoError(t, err)
 
 	require.NotNil(t, swagger.Paths["/"].Parameters[0].Value)
@@ -282,29 +284,30 @@ paths:
 `)
 
 	loader := openapi3.NewSwaggerLoader()
-	swagger, err := loader.LoadSwaggerFromYAMLData(spec)
+	swagger, err := loader.LoadSwaggerFromData(spec)
 	require.NoError(t, err)
 
 	require.NotNil(t, swagger.Paths["/"].Post.RequestBody.Value.Content.Get("application/json").Examples["test"])
 }
 
-func createTestServer(address string, handler http.Handler) *httptest.Server {
+func createTestServer(handler http.Handler) *httptest.Server {
 	ts := httptest.NewUnstartedServer(handler)
-	l, _ := net.Listen("tcp", address)
+	l, _ := net.Listen("tcp", addr)
 	ts.Listener.Close()
 	ts.Listener = l
 	return ts
 }
+
 func TestLoadFromRemoteURL(t *testing.T) {
 
 	fs := http.FileServer(http.Dir("testdata"))
-	ts := createTestServer("localhost:3000", fs)
+	ts := createTestServer(fs)
 	ts.Start()
 	defer ts.Close()
 
 	loader := openapi3.NewSwaggerLoader()
 	loader.IsExternalRefsAllowed = true
-	url, err := url.Parse("http://localhost:3000/test.openapi.json")
+	url, err := url.Parse("http://" + addr + "/test.openapi.json")
 	require.NoError(t, err)
 
 	swagger, err := loader.LoadSwaggerFromURI(url)
@@ -320,6 +323,16 @@ func TestLoadFileWithExternalSchemaRef(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotNil(t, swagger.Components.Schemas["AnotherTestSchema"].Value.Type)
+}
+
+func TestLoadFileWithExternalSchemaRefSingleComponent(t *testing.T) {
+	loader := openapi3.NewSwaggerLoader()
+	loader.IsExternalRefsAllowed = true
+	swagger, err := loader.LoadSwaggerFromFile("testdata/testrefsinglecomponent.openapi.json")
+	require.NoError(t, err)
+
+	require.NotNil(t, swagger.Components.Responses["SomeResponse"])
+	require.Equal(t, "this is a single response definition", swagger.Components.Responses["SomeResponse"].Value.Description)
 }
 
 func TestLoadRequestResponseHeaderRef(t *testing.T) {
@@ -379,7 +392,7 @@ func TestLoadFromDataWithExternalRequestResponseHeaderRemoteRef(t *testing.T) {
                         "description": "test",
                         "headers": {
                             "X-TEST-HEADER": {
-                                "$ref": "http://localhost:3000/components.openapi.json#/components/headers/CustomTestHeader"
+                                "$ref": "http://` + addr + `/components.openapi.json#/components/headers/CustomTestHeader"
                             }
                         }
                     }
@@ -390,7 +403,7 @@ func TestLoadFromDataWithExternalRequestResponseHeaderRemoteRef(t *testing.T) {
 }`)
 
 	fs := http.FileServer(http.Dir("testdata"))
-	ts := createTestServer("localhost:3000", fs)
+	ts := createTestServer(fs)
 	ts.Start()
 	defer ts.Close()
 
@@ -401,4 +414,32 @@ func TestLoadFromDataWithExternalRequestResponseHeaderRemoteRef(t *testing.T) {
 
 	require.NotNil(t, swagger.Paths["/test"].Post.Responses["default"].Value.Headers["X-TEST-HEADER"].Value.Description)
 	require.Equal(t, "description", swagger.Paths["/test"].Post.Responses["default"].Value.Headers["X-TEST-HEADER"].Value.Description)
+}
+
+func TestLoadYamlFile(t *testing.T) {
+	loader := openapi3.NewSwaggerLoader()
+	loader.IsExternalRefsAllowed = true
+	swagger, err := loader.LoadSwaggerFromFile("testdata/test.openapi.yml")
+	require.NoError(t, err)
+
+	require.Equal(t, "OAI Specification in YAML", swagger.Info.Title)
+}
+
+func TestLoadYamlFileWithExternalSchemaRef(t *testing.T) {
+	loader := openapi3.NewSwaggerLoader()
+	loader.IsExternalRefsAllowed = true
+	swagger, err := loader.LoadSwaggerFromFile("testdata/testref.openapi.yml")
+	require.NoError(t, err)
+
+	require.NotNil(t, swagger.Components.Schemas["AnotherTestSchema"].Value.Type)
+}
+
+func TestLoadYamlFileWithExternalPathRef(t *testing.T) {
+	loader := openapi3.NewSwaggerLoader()
+	loader.IsExternalRefsAllowed = true
+	swagger, err := loader.LoadSwaggerFromFile("testdata/pathref.openapi.yml")
+	require.NoError(t, err)
+
+	require.NotNil(t, swagger.Paths["/test"].Get.Responses["200"].Value.Content["application/json"].Schema.Value.Type)
+	require.Equal(t, "string", swagger.Paths["/test"].Get.Responses["200"].Value.Content["application/json"].Schema.Value.Type)
 }

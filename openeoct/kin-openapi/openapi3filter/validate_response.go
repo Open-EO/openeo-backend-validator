@@ -2,16 +2,23 @@
 package openapi3filter
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
 )
 
+// ValidateResponse is used to validate the given input according to previous
+// loaded OpenAPIv3 spec. If the input does not match the OpenAPIv3 spec, a
+// non-nil error will be returned.
+//
+// Note: One can tune the behavior of uniqueItems: true verification
+// by registering a custom function with openapi3.RegisterArrayUniqueItemsChecker
 func ValidateResponse(c context.Context, input *ResponseValidationInput) error {
 	req := input.RequestValidationInput.Request
-
 	switch req.Method {
 	case "HEAD":
 		return nil
@@ -42,88 +49,91 @@ func ValidateResponse(c context.Context, input *ResponseValidationInput) error {
 
 	// Find input for the current status
 	responses := route.Operation.Responses
-	if responses != nil && len(responses) > 0 {
-		responseRef := responses.Get(status) // Response
-		if responseRef == nil {
-			responseRef = responses.Default() // Default input
+	if len(responses) == 0 {
+		return nil
+	}
+	responseRef := responses.Get(status) // Response
+	if responseRef == nil {
+		responseRef = responses.Default() // Default input
+	}
+	if responseRef == nil {
+		// By default, status that is not documented is allowed.
+		if !options.IncludeResponseStatus {
+			return nil
 		}
-		if responseRef == nil {
-			// By default, status that is not documented is allowed
-			if !options.IncludeResponseStatus {
-				return nil
-			}
 
-			// Other.
-			return &ResponseError{
-				Input:  input,
-				Reason: "status is not supported",
-			}
+		return &ResponseError{Input: input, Reason: "status is not supported"}
+	}
+	response := responseRef.Value
+	if response == nil {
+		return &ResponseError{Input: input, Reason: "response has not been resolved"}
+	}
+
+	if options.ExcludeResponseBody {
+		// A user turned off validation of a response's body.
+		return nil
+	}
+
+	content := response.Content
+	if len(content) == 0 || options.ExcludeResponseBody {
+		// An operation does not contains a validation schema for responses with this status code.
+		return nil
+	}
+
+	inputMIME := input.Header.Get("Content-Type")
+	contentType := content.Get(inputMIME)
+	if contentType == nil {
+		return &ResponseError{
+			Input:  input,
+			Reason: fmt.Sprintf("input header 'Content-Type' has unexpected value: %q", inputMIME),
 		}
-		response := responseRef.Value
-		if response == nil {
-			return &ResponseError{
-				Input:  input,
-				Reason: "response has not been resolved",
-			}
+	}
+
+	if contentType.Schema == nil {
+		// An operation does not contains a validation schema for responses with this status code.
+		return nil
+	}
+
+	// Read response's body.
+	body := input.Body
+
+	// Response would contain partial or empty input body
+	// after we begin reading.
+	// Ensure that this doesn't happen.
+	input.Body = nil
+
+	// Ensure we close the reader
+	defer body.Close()
+
+	// Read all
+	data, err := ioutil.ReadAll(body)
+	if err != nil {
+		return &ResponseError{
+			Input:  input,
+			Reason: "failed to read response body",
+			Err:    err,
 		}
-		content := response.Content
-		if len(content) > 0 && !options.ExcludeResponseBody {
-			inputMIME := input.Header.Get("Content-Type")
-			mediaType := parseMediaType(inputMIME)
-			contentType := content[mediaType]
-			if contentType == nil {
-				return &ResponseError{
-					Input:  input,
-					Reason: "input header 'Content-type' has unexpected value",
-				}
-			}
-			schemaRef := contentType.Schema
-			if schemaRef != nil && isMediaTypeJSON(mediaType) {
-				schema := schemaRef.Value
+	}
 
-				// Read request body
-				body := input.Body
+	// Put the data back into the response.
+	input.SetBodyBytes(data)
 
-				// Response would contain partial or empty input body
-				// after we begin reading.
-				// Ensure that this doesn't happen.
-				input.Body = nil
+	encFn := func(name string) *openapi3.Encoding { return contentType.Encoding[name] }
+	value, err := decodeBody(bytes.NewBuffer(data), input.Header, contentType.Schema, encFn)
+	if err != nil {
+		return &ResponseError{
+			Input:  input,
+			Reason: "failed to decode response body",
+			Err:    err,
+		}
+	}
 
-				// Ensure we close the reader
-				defer body.Close()
-
-				// Read all
-				data, err := ioutil.ReadAll(body)
-				if err != nil {
-					return &ResponseError{
-						Input:  input,
-						Reason: "reading the input body failed",
-						Err:    err,
-					}
-				}
-
-				// Put the data back into the request
-				input.SetBodyBytes(data)
-
-				// Decode JSON
-				var value interface{}
-				if err := json.Unmarshal(data, &value); err != nil {
-					return &ResponseError{
-						Input:  input,
-						Reason: "decoding JSON in the input body failed",
-						Err:    err,
-					}
-				}
-
-				// Validate JSON with the schema
-				if err := schema.VisitJSON(value); err != nil {
-
-					return &ResponseError{
-						Input: input,
-						Err:   err,
-					}
-				}
-			}
+	// Validate data with the schema.
+	if err := contentType.Schema.Value.VisitJSON(value); err != nil {
+		return &ResponseError{
+			Input:  input,
+			Reason: "response body doesn't match the schema",
+			Err:    err,
 		}
 	}
 	return nil

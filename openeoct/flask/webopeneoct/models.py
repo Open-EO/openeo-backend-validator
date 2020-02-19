@@ -1,4 +1,4 @@
-from webopeneoct import db
+from openeoct.flask.webopeneoct import db
 
 
 class Backend(db.Model):

@@ -567,7 +567,7 @@ func main() {
 	app.Usage = "validating a back end against an openapi description file!"
 
 	// add config command
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name:    "config",
 			Aliases: []string{"c"},
@@ -592,6 +592,7 @@ func main() {
 		log.Println("Error: No config file specified")
 	}
 
+	// config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 	// define back end and compliance test instance
 	ct := new(ComplianceTest)
 	ct.backend.url = config.Url
@@ -610,14 +611,6 @@ func main() {
 	}
 
 	ct.endpoints = ep_array
-
-	// state, err := ct.validate(config.Endpoints)
-	//log.Println("Result: ", state)
-	//if err != nil {
-	//		log.Println("Error: ", err.msg)
-	//	}
-
-	//	ct.endpoints = []string{"/", "/collections", "/service_types"}
 
 	// Run validation
 	result := ct.validateAll()

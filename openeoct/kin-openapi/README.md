@@ -14,6 +14,8 @@ The project has received pull requests from many people. Thanks to everyone!
 Here's some projects that depend on _kin-openapi_:
   * [github.com/getkin/kin](https://github.com/getkin/kin) - "A configurable backend"
   * [github.com/danielgtaylor/apisprout](https://github.com/danielgtaylor/apisprout) - "Lightweight, blazing fast, cross-platform OpenAPI 3 mock server with validation"
+  * [github.com/deepmap/oapi-codegen](https://github.com/deepmap/oapi-codegen) - Generate Go server boilerplate from an OpenAPI 3 spec
+  * [github.com/dunglas/vulcain](https//github.com/dunglas/vulcain) - "Use HTTP/2 Server Push to create fast and idiomatic client-driven REST APIs"
   * (Feel free to add your project by [creating an issue](https://github.com/getkin/kin-openapi/issues/new) or a pull request)
 
 ## Alternative projects
@@ -49,8 +51,8 @@ func GetOperation(httpRequest *http.Request) (*openapi3.Operation, error) {
   router := openapi3filter.NewRouter().WithSwaggerFromFile("swagger.json")
 
   // Find route
-  route, _, err := router.FindRoute("GET", req.URL.String())
-  if err!=nil {
+  route, _, err := router.FindRoute("GET", req.URL)
+  if err != nil {
     return nil, err
   }
 
@@ -61,26 +63,134 @@ func GetOperation(httpRequest *http.Request) (*openapi3.Operation, error) {
 
 ## Validating HTTP requests/responses
 ```go
-import (
-  "net/http"
+package main
 
-  "github.com/getkin/kin-openapi/openapi3"
-  "github.com/getkin/kin-openapi/openapi3filter"
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"log"
+	"net/http"
+
+	"github.com/getkin/kin-openapi/openapi3filter"
 )
 
-var router = openapi3filter.NewRouter().WithSwaggerFromFile("swagger.json")
+func main() {
+	router := openapi3filter.NewRouter().WithSwaggerFromFile("swagger.json")
+	ctx := context.TODO()
+	httpReq, _ := http.NewRequest(http.MethodGet, "/items", nil)
 
-func ValidateRequest(req *http.Request) {
-  openapi3filter.ValidateRequest(nil, &openapi3filter.ValidateRequestInput {
-    Request: req,
-    Router:  router,
-  })
+	// Find route
+	route, pathParams, _ := router.FindRoute(httpReq.Method, httpReq.URL)
 
-  // Get response
+	// Validate request
+	requestValidationInput := &openapi3filter.RequestValidationInput{
+		Request:    httpReq,
+		PathParams: pathParams,
+		Route:      route,
+	}
+	if err := openapi3filter.ValidateRequest(ctx, requestValidationInput); err != nil {
+		panic(err)
+	}
 
-  openapi3filter.ValidateResponse(nil, &openapi3filter.ValidateResponseInput {
-    // ...
-  })
+	var (
+		respStatus      = 200
+		respContentType = "application/json"
+		respBody        = bytes.NewBufferString(`{}`)
+	)
+
+	log.Println("Response:", respStatus)
+	responseValidationInput := &openapi3filter.ResponseValidationInput{
+		RequestValidationInput: requestValidationInput,
+		Status:                 respStatus,
+		Header: http.Header{
+			"Content-Type": []string{
+				respContentType,
+			},
+		},
+	}
+	if respBody != nil {
+		data, _ := json.Marshal(respBody)
+		responseValidationInput.SetBodyBytes(data)
+	}
+
+	// Validate response.
+	if err := openapi3filter.ValidateResponse(ctx, responseValidationInput); err != nil {
+		panic(err)
+	}
+}
+```
+
+## Custom content type for body of HTTP request/response
+
+By default, the library parses a body of HTTP request and response
+if it has one of the next content types: `"text/plain"` or `"application/json"`.
+To support other content types you must register decoders for them:
+
+```go
+func main() {
+	// ...
+
+	// Register a body's decoder for content type "application/xml".
+	openapi3filter.RegisterBodyDecoder("application/xml", xmlBodyDecoder)
+
+	// Now you can validate HTTP request that contains a body with content type "application/xml".
+	requestValidationInput := &openapi3filter.RequestValidationInput{
+		Request:    httpReq,
+		PathParams: pathParams,
+		Route:      route,
+	}
+	if err := openapi3filter.ValidateRequest(ctx, requestValidationInput); err != nil {
+		panic(err)
+	}
+
+	// ...
+
+	// And you can validate HTTP response that contains a body with content type "application/xml".
+	if err := openapi3filter.ValidateResponse(ctx, responseValidationInput); err != nil {
+		panic(err)
+	}
 }
 
+func xmlBodyDecoder(body []byte) (interface{}, error) {
+	// Decode body to a primitive, []inteface{}, or map[string]interface{}.
+}
+```
+
+## Custom function for check uniqueness of JSON array
+
+By defaut, the library check unique items by below predefined function
+
+```go
+func isSliceOfUniqueItems(xs []interface{}) bool {
+	s := len(xs)
+	m := make(map[string]struct{}, s)
+	for _, x := range xs {
+		// The input slice is coverted from a JSON string, there shall
+		// have no error when covert it back.
+		key, _ := json.Marshal(&x)
+		m[string(key)] = struct{}{}
+	}
+	return s == len(m)
+}
+```
+
+In the predefined function using `json.Marshal` to generate a string can
+be used as a map key which is to support check the uniqueness of an array
+when the array items are JSON objects or JSON arraies. You can register
+you own function according to your input data to get better performance:
+
+```go
+func main() {
+	// ...
+
+	// Register a customized function used to check uniqueness of array.
+	openapi3.RegisterArrayUniqueItemsChecker(arrayUniqueItemsChecker)
+
+	// ... other validate codes
+}
+
+func arrayUniqueItemsChecker(items []interface{}) bool {
+	// Check the uniqueness of the input slice(array in JSON)
+}
 ```

@@ -1,15 +1,17 @@
 from .models import Backend, Endpoint, Result
-from webopeneoct import db
+from openeoct.flask.webopeneoct import db
 import json
 import toml
 import subprocess
 import os
 import time
 from shutil import copyfile
+import requests
 
 WORKING_DIR = "../.."
 PYTEST_DIR = "../../../openeo_compliance_tests/"
 PYTEST_CMD = "/home/bgoesswe/.pyenv/versions/miniconda3-latest/envs/openeoct/bin/pytest"
+
 
 def create_configfile(be_id):
     """
@@ -72,6 +74,79 @@ def create_configfile(be_id):
         text_file.write(new_toml_string)
 
     return config_path
+
+
+def common_member(a, b):
+    a_set = set(a)
+    b_set = set(b)
+    if len(a_set.intersection(b_set)) > 0:
+        return(True)
+    return(False)
+
+
+def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
+    """
+    Generates an endpoint in the config file for each endpoint listed in the capabilities page of the backend.
+    If an endpoint does already exists, it is not overwritten but ignored.
+
+    Parameters
+    ----------
+    be_id : int
+        ID of Backend
+
+    Return
+    ----------
+    result_list : list
+        List of Endpoint instances that have been added, empty if no endpoint was added.
+    """
+    ep_list = []
+    backend = Backend.query.filter(Backend.id == be_id).first()
+
+    if not backend:
+        return []
+
+    resp = requests.get(backend.url)
+    capabilities = resp.json()
+
+    endpoints = Endpoint.query.filter(Endpoint.backend == be_id).all()
+    url_dict = {}
+
+
+    # Existing endpoint urls of the backend
+    for ep in endpoints:
+        if ep.url in url_dict:
+            url_dict[ep.url].append(ep.type)
+        else:
+            url_dict[ep.url] = [ep.type]
+
+    for ep in capabilities["endpoints"]:
+
+        if "methods" in ep:
+            if not common_member(re_types, ep["methods"]):
+                continue
+
+        if "path" in ep:
+
+            if leave_ids:
+                if "{" in ep["path"]:
+                    continue
+            for met in ep["methods"]:
+
+                if met not in re_types:
+                    continue
+                if ep["path"] in url_dict:
+                    if met in url_dict[ep["path"]]:
+                        continue
+
+                new_ep = Endpoint(be_id, ep["path"], met)
+
+                db.session.add(new_ep)
+                db.session.commit()
+                ep_list.append(new_ep)
+                print(ep)
+
+    create_configfile(be_id)
+    return ep_list
 
 
 def read_result(be_id):
@@ -172,6 +247,7 @@ def get_pytest_path(be_id):
         return result_path
     else:
         return None
+
 
 def get_pytest_static_path(be_id):
     result_path = os.path.abspath("static/report_{}.html".format(be_id))

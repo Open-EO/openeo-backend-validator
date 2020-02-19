@@ -66,6 +66,8 @@
       {% endif %}
       {% if form.id.data %}
         <dd><button type="button" onclick="window.location.href='{{ url_for('backend_add_endpoint', be_id=form.id.data) }}';">Add Endpoint <span class="glyphicon glyphicon-plus"></span></button>
+        <dd><button type="button" onclick="window.location.href='{{ url_for('backend_gen_get_endpoints', be_id=form.id.data) }}';">Generate GET Endpoints <span class="glyphicon glyphicon-plus"></span></button>
+        <dd><button type="button" onclick="window.location.href='{{ url_for('backend_gen_all_endpoints', be_id=form.id.data) }}';">Generate ALL Endpoints <span class="glyphicon glyphicon-plus"></span></button>
       {% endif %}
   </dl>
 

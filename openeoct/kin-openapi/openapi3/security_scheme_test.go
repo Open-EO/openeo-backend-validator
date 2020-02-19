@@ -59,12 +59,24 @@ var securitySchemeExamples = []securitySchemeExample{
 		valid: true,
 	},
 	{
-		title: "JWT Bearer Sample",
+		title: "apiKey with bearerFormat",
+		raw: []byte(`
+{
+  "type": "apiKey",
+	"in": "header",
+	"name": "X-API-KEY",
+  "bearerFormat": "Arbitrary text"
+}
+`),
+		valid: false,
+	},
+	{
+		title: "Bearer Sample with arbitrary format",
 		raw: []byte(`
 {
   "type": "http",
   "scheme": "bearer",
-  "bearerFormat": "JWT"
+  "bearerFormat": "Arbitrary text"
 }
 `),
 		valid: true,
@@ -153,6 +165,36 @@ var securitySchemeExamples = []securitySchemeExample{
   "type": "apiKey",
 	"in": "cookie",
 	"name": "somecookie"
+}
+`),
+		valid: true,
+	},
+
+	{
+		title: "OAuth Flow Object with no scopes",
+		raw: []byte(`
+{
+  "type": "oauth2",
+  "flows": {
+    "password": {
+      "tokenUrl": "https://example.com/api/oauth/token"
+    }
+  }
+}
+`),
+		valid: false,
+	},
+	{
+		title: "OAuth Flow Object with empty scopes",
+		raw: []byte(`
+{
+  "type": "oauth2",
+  "flows": {
+    "password": {
+			"tokenUrl": "https://example.com/api/oauth/token",
+			"scopes": {}
+    }
+  }
 }
 `),
 		valid: true,

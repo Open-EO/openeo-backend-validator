@@ -1,8 +1,9 @@
 from wtforms import Form, BooleanField, StringField, PasswordField, validators, SelectField, TextAreaField, IntegerField
-from wtforms.validators import Required
+from wtforms.validators import DataRequired
 from wtforms.widgets import PasswordInput
 from .models import Backend, Endpoint
 import os
+
 
 class BackendForm(Form):
     """
@@ -92,12 +93,12 @@ class EndpointForm(Form):
     id = IntegerField('Id')
     backend = SelectField('Backend', coerce=int,
                                validators=[
-                                   Required('Please select an organisation')])
+                                   DataRequired('Please select an organisation')])
     url = StringField('URL')
     type = SelectField('Type', choices=[('GET', 'GET'), ('POST', 'POST'), ('PATCH', 'PATCH'), ('PUT', 'PUT'),
                                         ('DELETE', 'DELETE')],
                                validators=[
-                                   Required('Please select an organisation')])
+                                   DataRequired('Please select an organisation')])
     body = TextAreaField('Body', render_kw={'class': 'form-control', 'rows': 20})
 #    head = TextAreaField('Head')
 #    auth = SelectField('Authentication', choices=[('Auto', 'auto'), ('Yes', 'yes'), ('No', 'no')])
@@ -115,7 +116,6 @@ class EndpointForm(Form):
             (backend.id, backend.name)
             for backend in backends
         ]
-
 
     def set_endpoint(self, endpoint):
         """
