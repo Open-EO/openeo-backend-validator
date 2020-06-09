@@ -1,10 +1,10 @@
 
 from openeoct.flask.webopeneoct import app, db
-from flask import request, flash, redirect, url_for, render_template
+from flask import request, flash, redirect, url_for, render_template, send_file
 from .forms import BackendForm, EndpointForm
 from .models import Backend, Endpoint
 from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints
-
+import os
 
 @app.route('/')
 def home():
@@ -216,6 +216,33 @@ def backend_validate(be_id):
     results = run_validation(be_id)
     #results = run_pytest_validation(be_id)
     return render_template('backend_validate.html', form=form, results=results)
+
+
+@app.route('/backend/download/<be_id>')
+def backend_download(be_id):
+    """
+    Downloads the configuration of the backend.
+
+    Parameters
+    ----------
+    be_id : int
+        ID of backend
+    """
+    backend = Backend.query.filter(Backend.id == be_id).first()
+
+    form = BackendForm(request.form)
+
+    form.set_backend(backend)
+
+    if backend.output == "result_None.json":
+        backend.output = "result_{}.json".format(backend.id)
+        db.session.commit()
+
+    config_path = "config_{}.toml".format(str(be_id))
+
+    config_path = os.getcwd() + "/" + config_path
+
+    return send_file(config_path, as_attachment=True)
 
 
 @app.route('/backend/validatepytest/<be_id>')

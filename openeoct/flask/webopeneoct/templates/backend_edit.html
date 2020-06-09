@@ -79,6 +79,7 @@
   <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
     {% if form.id.data %}
   <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
+    <button type="button" onclick="window.location.href='{{ url_for( 'backend_download', be_id=form.id.data ) }}';">Download</button>
     {% endif %}
 </form>
 
