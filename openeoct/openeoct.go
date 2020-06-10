@@ -633,7 +633,7 @@ func main() {
 	// Run validation
 	result := ct.validateAll()
 
-	jsonString, _ := json.Marshal(result)
+	jsonString, _ := json.MarshalIndent(result, "", "   ")
 
 	output := ReturnConfigValue(config.Output)
 
