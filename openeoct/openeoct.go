@@ -166,8 +166,16 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 
 		httpReq, _ := http.NewRequest(http.MethodGet, ct.backend.url+ct.authendpoint, nil)
 		httpReq.SetBasicAuth(ct.username, ct.password)
-		resp, _ := client.Do(httpReq)
-		if resp.StatusCode == 200 {
+		resp, errResp := client.Do(httpReq)
+
+		if errResp != nil {
+			errormsg := new(ErrorMessage)
+			errormsg.input = string(ct.backend.url + ct.authendpoint)
+			errormsg.msg = "Error calling the authentication url"
+			errormsg.output = string(errResp.Error())
+			return "Error1.5", errormsg
+
+		} else if resp.StatusCode == 200 {
 			body, _ := ioutil.ReadAll(resp.Body)
 			m := make(map[string]interface{})
 			json.Unmarshal(body, &m)
