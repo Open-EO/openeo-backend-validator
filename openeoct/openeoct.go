@@ -612,7 +612,13 @@ func main() {
 
 	ct.username = ReturnConfigValue(config.Username)
 	ct.password = ReturnConfigValue(config.Password)
-	ct.authendpoint = ReturnConfigValue(config.Authurl)
+	// ct.authendpoint = ReturnConfigValue(config.Authurl)
+
+	if config.Authurl == "" {
+		ct.authendpoint = "/credentials/basic"
+	} else {
+		ct.authendpoint = ReturnConfigValue(config.Authurl)
+	}
 
 	var ep_array []Endpoint
 	for name, ep := range config.Endpoints {
