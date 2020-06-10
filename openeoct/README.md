@@ -1,6 +1,7 @@
 # OpenEO compliance test using Go 
 
 This standalone tool written in Go uses the Go package [kin-openapi](https://github.com/getkin/kin-openapi) to read the openapi definition and validates the response of the back end to self defined requests.
+In the flask folder there is a simple web application GUI for this tool also available on a public instance [here](https://www.geo.tuwien.ac.at/openeoct).
 
 ## Building
 
@@ -33,6 +34,8 @@ to specify the necessary information (e.g. back end url, username, etc):
 *  *authurl* - the authentication endpoint of the back end (e.g. "/credentials/basic" or empty/missing if there is no authentication needed)
 *  *endpoints* - list of endpoints that should be tested at the back end.
 *  *output* - output file, to store the validation results (missing if it should be written into stdout in the terminal)
+
+The values of the toml config file (except for endpoints) can be set to environment variables. For example by writing "$MY_URL" for the environemnt variable MY_URL.
 
 There are example config files in the [examples folder](https://github.com/Open-EO/openeo-backend-validator/blob/master/openeoct/examples).
 
