@@ -1,8 +1,9 @@
 url="https://earthengine.openeo.org/v1.0"
 openapi="https://gist.githubusercontent.com/m-mohr/265efe594ee168e9ca122b6d47d9b8fd/raw/7feac299d188f8d79a286b4883946694e92c111d/openapi.json"
 username="group1"
-password="test123"
+password="$GEE_PWD"
 authurl="/credentials/basic"
+#output="output.json"
 [endpoints]
 
   [endpoints.endpoint1]
@@ -72,6 +73,3 @@ authurl="/credentials/basic"
   url = "/process_graphs"
   request_type = "POST"
   body = "examples/body/processgraph_endpoint_gee"
-
-#endpoints= [ "/jobs", "/", "/collections" ]
-#output="output.json"

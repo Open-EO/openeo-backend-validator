@@ -466,6 +466,17 @@ func ReadConfig(config_file string) Config {
 	return config
 }
 
+// Reads info from config file
+func ReturnConfigValue(config_item string) string {
+	var config_value = config_item
+	if strings.HasPrefix(config_value, "$") {
+		config_value = strings.Replace(config_value, "$", "", 1)
+		config_value = os.Getenv(config_value)
+	}
+
+	return config_value
+}
+
 // Testing Main function
 
 // func main() {
@@ -595,12 +606,13 @@ func main() {
 	// config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 	// define back end and compliance test instance
 	ct := new(ComplianceTest)
-	ct.backend.url = config.Url
-	ct.apifile = config.Openapi
 
-	ct.username = config.Username
-	ct.password = config.Password
-	ct.authendpoint = config.Authurl
+	ct.backend.url = ReturnConfigValue(config.Url)
+	ct.apifile = ReturnConfigValue(config.Openapi)
+
+	ct.username = ReturnConfigValue(config.Username)
+	ct.password = ReturnConfigValue(config.Password)
+	ct.authendpoint = ReturnConfigValue(config.Authurl)
 
 	var ep_array []Endpoint
 	for name, ep := range config.Endpoints {
@@ -617,11 +629,13 @@ func main() {
 
 	jsonString, _ := json.Marshal(result)
 
+	output := ReturnConfigValue(config.Output)
+
 	// Write to log stdout or to output file
-	if config.Output == "" {
+	if output == "" {
 		log.Println("Result:", string(jsonString))
 	} else {
-		ioutil.WriteFile(config.Output, jsonString, 0644)
+		ioutil.WriteFile(output, jsonString, 0644)
 	}
 
 }
