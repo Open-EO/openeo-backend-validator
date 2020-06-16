@@ -32,7 +32,7 @@ to specify the necessary information (e.g. back end url, username, etc):
 *  *username* - username of the back end (empty or missing if there is no authentication needed)
 *  *password* - password of the user (empty or missing if there is no authentication needed)
 *  *authurl* - the authentication endpoint of the back end (e.g. "/credentials/basic" or empty/missing if there is no authentication needed)
-*  *endpoints* - list of endpoints that should be tested at the back end.
+*  *endpoints* - list of endpoints that should be tested at the back end. Endpoints can have a group attribute, to structure the output by the groups and an optional attribute, so that the validation does not fail, but prints that it does not work but is also not mandatory.
 *  *output* - output file, to store the validation results (missing if it should be written into stdout in the terminal)
 
 The values of the toml config file (except for endpoints) can be set to environment variables. For example by writing "$MY_URL" for the environemnt variable MY_URL.

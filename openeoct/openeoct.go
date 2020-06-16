@@ -38,6 +38,8 @@ type Endpoint struct {
 	Request_type string
 	Body         string
 	Header       string
+	Optional     bool
+	Group        string
 	// Add auth and that stuff
 }
 
@@ -45,7 +47,7 @@ type Endpoint struct {
 type ComplianceTest struct {
 	backend      BackEnd
 	apifile      string
-	endpoints    []Endpoint
+	endpoints    map[string][]Endpoint
 	authendpoint string
 	username     string
 	password     string
@@ -57,20 +59,26 @@ func (ct *ComplianceTest) validateAll() map[string]string {
 
 	states := make(map[string]string)
 
-	for _, endpoint := range ct.endpoints {
-		state, err := ct.validate(endpoint)
-		if err != nil {
-			return_err := make(map[string]string)
-			err_msg := err.output
-			err_msg = strings.Replace(err_msg, "\n", "", -1)
-			err_msg = strings.Replace(err_msg, "\"", "'", -1)
-			err.output = err_msg
-			return_err["input"] = err.input
-			return_err["error"] = err.msg
-			return_err["details"] = err.output
-			states[endpoint.Url] = "Input: " + err.input + "; Error: " + err.msg + "; Details: " + err.output
-		} else {
-			states[endpoint.Url] = state
+	for _, endpoints := range ct.endpoints {
+		for _, endpoint := range endpoints {
+			state, err := ct.validate(endpoint)
+			if err != nil {
+				if endpoint.Optional == false {
+					return_err := make(map[string]string)
+					err_msg := err.output
+					err_msg = strings.Replace(err_msg, "\n", "", -1)
+					err_msg = strings.Replace(err_msg, "\"", "'", -1)
+					err.output = err_msg
+					return_err["input"] = err.input
+					return_err["error"] = err.msg
+					return_err["details"] = err.output
+					states[endpoint.Id] = "Input: " + err.input + "; Error: " + err.msg + "; Details: " + err.output
+				} else {
+					states[endpoint.Id] = "Non-mandatory endpoint, not supported by back-end"
+				}
+			} else {
+				states[endpoint.Id] = state
+			}
 		}
 	}
 	return states
@@ -303,189 +311,6 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 	return "Valid", nil
 }
 
-// // log.Println(ExternValidateResponse("https://raw.githubusercontent.com/Open-EO/openeo-api/0.4.1/openapi.json", "/", "GET", 200, "", ""))
-// func ExternValidateResponse(openapi_path string, endpoint_path string, endpoint_type string, response_status int, response_body string, response_header string) string {
-// 	ct := new(ComplianceTest)
-// 	//ct.backend.url = config.Url
-// 	ct.apifile = openapi_path
-
-// 	endpoint := new(Endpoint)
-// 	endpoint.Id = "Test"
-// 	endpoint.Url = endpoint_path
-// 	endpoint.Request_type = endpoint_type
-
-// 	resp := new(http.Response)
-
-// 	resp.StatusCode = response_status
-// 	resp.Body = ioutil.NopCloser(strings.NewReader(response_body))
-// 	//resp.Header = response_header
-
-// 	state, err := ct.validateResponse(*endpoint, resp)
-
-// 	if err != nil {
-// 		return err.msg
-// 	} else {
-// 		return state
-// 	}
-
-// }
-
-// Validates a single endpoint against a given response from the backend.
-// Returns the resulting state and an error message if something went wrong.
-// func (ct *ComplianceTest) validateResponse(endpoint Endpoint, response *http.Response) (string, *ErrorMessage) {
-// 	//log.Println(openapi3.SchemaStringFormats)
-// 	//openapi3.DefineStringFormat("url", `^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
-// 	//log.Println(openapi3.SchemaStringFormats)
-
-// 	_, err := os.Stat(ct.apifile)
-
-// 	// Try to read the openapi3 file
-// 	swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromFile(ct.apifile)
-
-// 	if err != nil {
-// 		// openapi3 file not found, assume it is an URI
-// 		apiReq, _ := http.NewRequest(http.MethodGet, ct.apifile, nil)
-// 		swagger, err = openapi3.NewSwaggerLoader().LoadSwaggerFromURI(apiReq.URL)
-// 	}
-
-// 	if err != nil {
-// 		errormsg := new(ErrorMessage)
-// 		errormsg.input = string(ct.apifile)
-// 		errormsg.msg = "Error reading the openEO API, neighter file nor url found"
-// 		errormsg.output = string(err.Error())
-// 		return "Error1", errormsg
-// 	}
-
-// 	router := openapi3filter.NewRouter().WithSwagger(swagger)
-// 	ctx := context.TODO()
-
-// 	token := ""
-
-// 	// Set Authentication Token
-// 	if ct.username != "" && ct.password != "" && ct.authendpoint != "" {
-
-// 		client := &http.Client{}
-
-// 		httpReq, _ := http.NewRequest(http.MethodGet, ct.backend.url+ct.authendpoint, nil)
-// 		httpReq.SetBasicAuth(ct.username, ct.password)
-// 		resp, _ := client.Do(httpReq)
-// 		if resp.StatusCode == 200 {
-// 			body, _ := ioutil.ReadAll(resp.Body)
-// 			m := make(map[string]interface{})
-// 			json.Unmarshal(body, &m)
-// 			token, _ = m["access_token"].(string)
-
-// 		}
-// 	}
-
-// 	// Define Request
-// 	httpReq, errReq := ct.buildRequest(endpoint, token, false)
-
-// 	if errReq != "" {
-// 		errormsg := new(ErrorMessage)
-// 		errormsg.input = "Endpoint " + string(endpoint) + " with token " + string(token)
-// 		errormsg.msg = "Error processing the Config file"
-// 		errormsg.output = string(errReq)
-// 		return "Error1", errormsg
-// 	}
-
-// 	// Find route in openAPI definition
-// 	route, pathParams, err := router.FindRoute(httpReq.Method, httpReq.URL)
-
-// 	if err != nil {
-// 		errormsg := new(ErrorMessage)
-// 		errormsg.input = "Method: " + string(httpReq.Method) + " with URL: " + string(httpReq.URL)
-// 		errormsg.msg = "Error finding endpoint in the OpenAPI definition"
-// 		errormsg.output = string(err.Error())
-// 		return "Error2", errormsg
-// 	}
-
-// 	// Options for the validation
-// 	options := &openapi3filter.Options{
-// 		AuthenticationFunc: func(c context.Context, input *openapi3filter.AuthenticationInput) error {
-// 			// TODO: support more schemes
-// 			sec := input.SecurityScheme
-// 			if sec.Type == "http" && sec.Scheme == "bearer" {
-// 				if httpReq.Header.Get("Authorization") == "" {
-// 					return nil //errors.New("Missing auth")
-// 				}
-// 			}
-// 			return nil
-// 		},
-// 	}
-
-// 	// Validate request
-// 	requestValidationInput := &openapi3filter.RequestValidationInput{
-// 		Request:    httpReq,
-// 		PathParams: pathParams,
-// 		Route:      route,
-// 		Options:    options}
-
-// 	if err := openapi3filter.ValidateRequest(ctx, requestValidationInput); err != nil {
-// 		errormsg := new(ErrorMessage)
-// 		errormsg.input = string(httpReq.Method) + "  " + string(httpReq.URL)
-// 		errormsg.msg = "Error validating the request"
-// 		errormsg.output = string(err.Error())
-// 		return "Error3", errormsg
-// 	}
-
-// 	// Send request
-// 	//client := &http.Client{}
-
-// 	//execReq, errReq := ct.buildRequest(endpoint, token, true)
-
-// 	// resp, err := client.Do(execReq)
-
-// 	// if err != nil {
-// 	// 	errormsg := new(ErrorMessage)
-// 	// 	errormsg.msg = "Error sending request to back end: \n" + err.Error()
-// 	// 	return "Error4", errormsg
-// 	// }
-
-// 	// Get Response
-// 	body, err := ioutil.ReadAll(response.Body)
-
-// 	// log.Println(string(body))
-
-// 	if response.StatusCode == 401 {
-// 		errormsg := new(ErrorMessage)
-// 		errormsg.input = "Header: " + string(execReq.Header) + "; Body: " + string(execReq.Body)
-// 		errormsg.msg = "Error: Authentication failed, currently only BasicAuth is supported."
-// 		return "Error", errormsg
-// 	}
-
-// 	if err != nil {
-// 		errormsg := new(ErrorMessage)
-// 		errormsg.msg = "Error reading response from the back end: \n" + err.Error()
-// 		return "Error5", errormsg
-// 	}
-
-// 	var (
-// 		respStatus = response.StatusCode
-// 		respHeader = response.Header
-// 		respBody   = string(body)
-// 	)
-
-// 	// Define validation input
-// 	responseValidationInput := &openapi3filter.ResponseValidationInput{
-// 		RequestValidationInput: requestValidationInput,
-// 		Status:                 respStatus,
-// 		Header:                 respHeader}
-
-// 	if respBody != "" {
-// 		responseValidationInput.SetBodyBytes([]byte(respBody))
-// 	}
-
-// 	// Validate response.
-// 	if err := openapi3filter.ValidateResponse(ctx, responseValidationInput); err != nil {
-// 		errormsg := new(ErrorMessage)
-// 		errormsg.msg = "Response of the back end not valid: \n" + err.Error()
-// 		return "Not Valid", errormsg
-// 	}
-
-// 	return "Valid", nil
-// }
-
 // Elements of the Config file
 
 type Config struct {
@@ -529,93 +354,6 @@ func ReturnConfigValue(config_item string) string {
 	return config_value
 }
 
-// Testing Main function
-
-// func main() {
-
-// 	// Config file path
-// 	var config Config
-
-// 	// CLI handling
-// 	// app := cli.NewApp()
-// 	// app.Name = "openeoct"
-// 	// app.Name = "openeoct"
-// 	// app.Version = "0.1.0"
-// 	// app.Usage = "validating a back end against an openapi description file!"
-
-// 	// // add config command
-// 	// app.Commands = []cli.Command{
-// 	// 	{
-// 	// 		Name:    "config",
-// 	// 		Aliases: []string{"c"},
-// 	// 		Usage:   "load from config file",
-// 	// 		Action: func(c *cli.Context) error {
-// 	// 			//configfile = c.Args().First()
-// 	// 			config = ReadConfig(c.Args().First())
-// 	// 			//log.Println("Configfile1: ", config.Url)
-// 	// 			return nil
-// 	// 		},
-// 	// 	},
-// 	// }
-
-// 	// // run CLI
-// 	// apperr := app.Run(os.Args)
-// 	// if apperr != nil {
-// 	// 	log.Fatal(apperr)
-// 	// }
-
-// 	config = ReadConfig("examples/gee_config_v4_external.toml")
-
-// 	// config file read correctly
-// 	if config.Url == "" {
-// 		log.Println("Error: No config file specified")
-// 	}
-
-// 	// define back end and compliance test instance
-// 	ct := new(ComplianceTest)
-// 	ct.backend.url = config.Url
-// 	ct.apifile = config.Openapi
-
-// 	ct.username = config.Username
-// 	ct.password = config.Password
-// 	ct.authendpoint = config.Authurl
-
-// 	//	log.Println(config.Endpoints)
-
-// 	var ep_array []Endpoint
-// 	for name, ep := range config.Endpoints {
-// 		if ep.Id == "" {
-// 			ep.Id = name
-// 		}
-// 		ep_array = append(ep_array, ep)
-// 	}
-
-// 	ct.endpoints = ep_array
-
-// 	// state, err := ct.validate(config.Endpoints)
-// 	//log.Println("Result: ", state)
-// 	//if err != nil {
-// 	//		log.Println("Error: ", err.msg)
-// 	//	}
-
-// 	//	ct.endpoints = []string{"/", "/collections", "/service_types"}
-
-// 	// Run validation
-// 	ct.listEndpoints()
-
-// 	result := ct.validateAll()
-
-// 	jsonString, _ := json.Marshal(result)
-
-// 	// Write to log stdout or to output file
-// 	if config.Output == "" {
-// 		log.Println("Result:", string(jsonString))
-// 	} else {
-// 		ioutil.WriteFile(config.Output, jsonString, 0644)
-// 	}
-
-// }
-
 // Main function
 func main() {
 
@@ -649,6 +387,7 @@ func main() {
 	if apperr != nil {
 		log.Fatal(apperr)
 	}
+	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 
 	// config file read correctly
 	if config.Url == "" {
@@ -672,20 +411,44 @@ func main() {
 		ct.authendpoint = ReturnConfigValue(config.Authurl)
 	}
 
-	var ep_array []Endpoint
+	var ep_groups map[string][]Endpoint
+	ep_groups = make(map[string][]Endpoint)
 	for name, ep := range config.Endpoints {
+		//log.Println("Ep:", string(ep))
 		if ep.Id == "" {
 			ep.Id = name
 		}
-		ep_array = append(ep_array, ep)
+
+		if ep.Group == "" {
+			ep.Group = "nogroup"
+		}
+
+		ep_groups[ep.Group] = append(ep_groups[ep.Group], ep)
 	}
 
-	ct.endpoints = ep_array
+	ct.endpoints = ep_groups
 
 	// Run validation
 	result := ct.validateAll()
 
-	jsonString, _ := json.MarshalIndent(result, "", "    ")
+	var result_json map[string](map[string]string)
+	result_json = make(map[string](map[string]string))
+
+	for group, endpoints := range ep_groups {
+		for _, ep := range endpoints {
+			if result_json[group] == nil {
+				result_json[group] = make(map[string]string)
+				result_json[group]["group_summary"] = "Valid"
+			}
+			result_json[group][ep.Url] = result[ep.Id]
+			if result[ep.Id] != "Valid" && result[ep.Id] != "Non-mandatory endpoint, not supported by back-end" {
+				result_json[group]["group_summary"] = "Invalid"
+			}
+
+		}
+	}
+
+	jsonString, _ := json.MarshalIndent(result_json, "", "    ")
 
 	output := ReturnConfigValue(config.Output)
 

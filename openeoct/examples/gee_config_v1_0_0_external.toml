@@ -1,18 +1,17 @@
-url="$GE_URL"
+url="https://earthengine.openeo.org/v1.0"
 openapi="https://gist.githubusercontent.com/m-mohr/265efe594ee168e9ca122b6d47d9b8fd/raw/7feac299d188f8d79a286b4883946694e92c111d/openapi.json"
 username="group1"
-password="$GEE_PWD"
+password="test123"
 authurl="/credentials/basic"
 #output="output.json"
 [endpoints]
-
   [endpoints.endpoint1]
-  id = "endpoint1a"
   url = "/jobs"
   request_type = "GET"
+  optional = true
+  group = "capabilities"
 
   [endpoints.endpoint2]
-  id = "endpoint2b"
   url = "/"
   request_type = "GET"
 
@@ -20,6 +19,13 @@ authurl="/credentials/basic"
   id = "output_formats"
   url = "/output_formats"
   request_type = "GET"
+
+  [endpoints.endpoint11111]
+  id = "output_formats2"
+  url = "/asdasd"
+  request_type = "GET"
+  group = "capabilities"
+  optional = true
 
   [endpoints.endpoint4]
   id = "service_types"
