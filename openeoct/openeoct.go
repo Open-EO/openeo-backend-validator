@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
@@ -55,13 +56,16 @@ type ComplianceTest struct {
 
 // Validates all enpoints defined in the compliance test instance.
 // Returns a map of strings containing the states of the validation results
-func (ct *ComplianceTest) validateAll() map[string]string {
+func (ct *ComplianceTest) validateAll() map[string](map[string]string) {
 
-	states := make(map[string]string)
+	states := make(map[string](map[string]string))
 
 	for _, endpoints := range ct.endpoints {
 		for _, endpoint := range endpoints {
 			state, err := ct.validate(endpoint)
+			states[endpoint.Id] = make(map[string]string)
+			states[endpoint.Id]["state"] = state
+
 			if err != nil {
 				if endpoint.Optional == false {
 					return_err := make(map[string]string)
@@ -72,12 +76,13 @@ func (ct *ComplianceTest) validateAll() map[string]string {
 					return_err["input"] = err.input
 					return_err["error"] = err.msg
 					return_err["details"] = err.output
-					states[endpoint.Id] = "Input: " + err.input + "; Error: " + err.msg + "; Details: " + err.output
+					states[endpoint.Id]["message"] = "Input: " + err.input + "; Error: " + err.msg + "; Details: " + err.output
 				} else {
-					states[endpoint.Id] = "Non-mandatory endpoint, not supported by back-end"
+					states[endpoint.Id]["message"] = "Non-mandatory endpoint, not supported by back-end"
+					states[endpoint.Id]["state"] = "Valid"
 				}
 			} else {
-				states[endpoint.Id] = state
+				states[endpoint.Id]["message"] = ""
 			}
 		}
 	}
@@ -200,7 +205,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 		errormsg.input = "Endpoint " + string(endpoint.Url) + " with token " + string(token)
 		errormsg.msg = "Error processing the Config file"
 		errormsg.output = string(errReq)
-		return "Error1", errormsg
+		return "Invalid", errormsg
 	}
 
 	// Find route in openAPI definition
@@ -211,7 +216,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 		errormsg.input = string(httpReq.Method) + "  " + string(endpoint.Url)
 		errormsg.msg = "Error finding endpoint in the OpenAPI definition"
 		errormsg.output = err.Error()
-		return "Error2", errormsg
+		return "Invalid", errormsg
 	}
 
 	// Options for the validation
@@ -240,7 +245,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 		errormsg.input = string(httpReq.Method) + "  " + string(endpoint.Url)
 		errormsg.msg = "Error validating the request"
 		errormsg.output = string(err.Error())
-		return "Error3", errormsg
+		return "Invalid", errormsg
 	}
 
 	// Send request
@@ -255,7 +260,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 		errormsg.input = string(httpReq.Method) + "  " + string(endpoint.Url)
 		errormsg.msg = "Error sending request to back end"
 		errormsg.output = string(err.Error())
-		return "Error4", errormsg
+		return "Invalid", errormsg
 	}
 
 	// Get Response
@@ -270,7 +275,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
 		errormsg.output = buf.String()
-		return "Error", errormsg
+		return "Invalid", errormsg
 	}
 
 	if err != nil {
@@ -280,7 +285,21 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 		//errormsg.input = "Response body: " + buf.String()
 		errormsg.msg = "Error reading response from the back end"
 		errormsg.output = string(err.Error())
-		return "Error5", errormsg
+		return "Invalid", errormsg
+	}
+
+	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+		errormsg := new(ErrorMessage)
+		errormsg.input = endpoint.Url
+		errormsg.msg = "Endpoint was not found"
+		errormsg.output = "Response Code " + strconv.Itoa(resp.StatusCode)
+		return "Missing", errormsg
+	} else if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+		errormsg := new(ErrorMessage)
+		errormsg.input = endpoint.Url
+		errormsg.msg = "Server Error"
+		errormsg.output = "Response Code " + strconv.Itoa(resp.StatusCode)
+		return "ServerError", errormsg
 	}
 
 	var (
@@ -305,7 +324,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 		//errormsg.input = "Response Body: " + string(body)
 		errormsg.msg = "Response of the back end not valid"
 		errormsg.output = err.Error()
-		return "Not Valid", errormsg
+		return "Invalid", errormsg
 	}
 
 	return "Valid", nil
@@ -387,7 +406,7 @@ func main() {
 	if apperr != nil {
 		log.Fatal(apperr)
 	}
-	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
+	// config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 
 	// config file read correctly
 	if config.Url == "" {
@@ -431,20 +450,20 @@ func main() {
 	// Run validation
 	result := ct.validateAll()
 
-	var result_json map[string](map[string]string)
-	result_json = make(map[string](map[string]string))
+	var result_json map[string](map[string]interface{})
+	result_json = make(map[string](map[string]interface{}))
 
 	for group, endpoints := range ep_groups {
 		for _, ep := range endpoints {
 			if result_json[group] == nil {
-				result_json[group] = make(map[string]string)
+				result_json[group] = make(map[string]interface{})
 				result_json[group]["group_summary"] = "Valid"
+				result_json[group]["endpoints"] = make(map[string](map[string]string))
 			}
-			result_json[group][ep.Url] = result[ep.Id]
-			if result[ep.Id] != "Valid" && result[ep.Id] != "Non-mandatory endpoint, not supported by back-end" {
+			result_json[group]["endpoints"].(map[string](map[string]string))[ep.Url] = result[ep.Id]
+			if result[ep.Id]["state"] != "Valid" {
 				result_json[group]["group_summary"] = "Invalid"
 			}
-
 		}
 	}
 
@@ -454,7 +473,7 @@ func main() {
 
 	// Write to log stdout or to output file
 	if output == "" {
-		log.Println("Result:", string(jsonString))
+		log.Println(string(jsonString))
 	} else {
 		ioutil.WriteFile(output, jsonString, 0644)
 	}
