@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-
 	"net/url"
 	"testing"
 
@@ -62,7 +61,8 @@ paths:
 	require.Equal(t, 2, len(doc.Components.Schemas))
 	require.Equal(t, 1, len(doc.Paths))
 	def := doc.Paths["/items"].Put.Responses.Default().Value
-	require.Equal(t, "unexpected error", def.Description)
+	desc := "unexpected error"
+	require.Equal(t, &desc, def.Description)
 	err = doc.Validate(loader.Context)
 	require.NoError(t, err)
 }
@@ -97,7 +97,7 @@ func TestResolveSchemaRefWithNullSchemaRef(t *testing.T) {
 	doc, err := loader.LoadSwaggerFromData(source)
 	require.NoError(t, err)
 	err = doc.Validate(loader.Context)
-	require.EqualError(t, err, "Error when validating Paths: Found unresolved ref: ''")
+	require.EqualError(t, err, "invalid paths: Found unresolved ref: ''")
 }
 
 func TestResolveResponseExampleRef(t *testing.T) {
@@ -332,7 +332,8 @@ func TestLoadFileWithExternalSchemaRefSingleComponent(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotNil(t, swagger.Components.Responses["SomeResponse"])
-	require.Equal(t, "this is a single response definition", swagger.Components.Responses["SomeResponse"].Value.Description)
+	desc := "this is a single response definition"
+	require.Equal(t, &desc, swagger.Components.Responses["SomeResponse"].Value.Description)
 }
 
 func TestLoadRequestResponseHeaderRef(t *testing.T) {
@@ -442,4 +443,111 @@ func TestLoadYamlFileWithExternalPathRef(t *testing.T) {
 
 	require.NotNil(t, swagger.Paths["/test"].Get.Responses["200"].Value.Content["application/json"].Schema.Value.Type)
 	require.Equal(t, "string", swagger.Paths["/test"].Get.Responses["200"].Value.Content["application/json"].Schema.Value.Type)
+}
+
+func TestResolveResponseLinkRef(t *testing.T) {
+	source := []byte(`
+openapi: 3.0.1
+info:
+  title: My API
+  version: 1.0.0
+components:
+  links:
+    Father:
+        description: link to to the father
+        operationId: getUserById
+        parameters:
+          "id": "$response.body#/fatherId"
+paths:
+  /users/{id}:
+    get:
+      operationId: getUserById,
+      parameters:
+        - name: id,
+          in: path
+          schema:
+            type: string
+      responses:
+        200:
+          description: A test response
+          content:
+            application/json:
+          links:
+            father:
+              $ref: '#/components/links/Father'
+`)
+	loader := openapi3.NewSwaggerLoader()
+	doc, err := loader.LoadSwaggerFromData(source)
+	require.NoError(t, err)
+
+	err = doc.Validate(loader.Context)
+	require.NoError(t, err)
+
+	response := doc.Paths[`/users/{id}`].Get.Responses.Get(200).Value
+	link := response.Links[`father`].Value
+	require.NotNil(t, link)
+	require.Equal(t, "getUserById", link.OperationID)
+	require.Equal(t, "link to to the father", link.Description)
+}
+
+func TestResolveNonComponentsRef(t *testing.T) {
+	spec := []byte(`
+openapi: 3.0.0
+info:
+  title: An API
+  version: v1
+
+components:
+  schemas:
+    NewItem:
+      required: [name]
+      properties:
+        name: {type: string}
+        tag: {type: string}
+    ErrorModel:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: integer}
+        message: {type: string}
+
+paths:
+  /items:
+    put:
+      description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewItem'
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+    post:
+      description: ''
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/paths/~1items/put/requestBody/content/application~1json/schema'
+      responses:
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+`)
+
+	loader := openapi3.NewSwaggerLoader()
+	doc, err := loader.LoadSwaggerFromData(spec)
+	require.NoError(t, err)
+	err = doc.Validate(loader.Context)
+	require.NoError(t, err)
 }

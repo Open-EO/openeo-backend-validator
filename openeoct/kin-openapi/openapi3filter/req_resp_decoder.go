@@ -104,16 +104,21 @@ func invalidSerializationMethodErr(sm *openapi3.SerializationMethod) error {
 func decodeContentParameter(param *openapi3.Parameter, input *RequestValidationInput) (
 	value interface{}, schema *openapi3.Schema, err error) {
 
-	paramValues := make([]string, 1)
+	var paramValues []string
 	var found bool
 	switch param.In {
 	case openapi3.ParameterInPath:
-		paramValues[0], found = input.PathParams[param.Name]
+		var paramValue string
+		if paramValue, found = input.PathParams[param.Name]; found {
+			paramValues = []string{paramValue}
+		}
 	case openapi3.ParameterInQuery:
 		paramValues, found = input.GetQueryParams()[param.Name]
 	case openapi3.ParameterInHeader:
-		paramValues[0] = input.Request.Header.Get(http.CanonicalHeaderKey(param.Name))
-		found = paramValues[0] != ""
+		if paramValue := input.Request.Header.Get(http.CanonicalHeaderKey(param.Name)); paramValue != "" {
+			paramValues = []string{paramValue}
+			found = true
+		}
 	case openapi3.ParameterInCookie:
 		var cookie *http.Cookie
 		if cookie, err = input.Request.Cookie(param.Name); err == http.ErrNoCookie {
@@ -121,7 +126,7 @@ func decodeContentParameter(param *openapi3.Parameter, input *RequestValidationI
 		} else if err != nil {
 			return
 		} else {
-			paramValues[0] = cookie.Value
+			paramValues = []string{cookie.Value}
 			found = true
 		}
 	default:
@@ -178,12 +183,14 @@ func defaultContentParameterDecoder(param *openapi3.Parameter, values []string) 
 			return
 		}
 	} else {
-		outArray := make([]interface{}, len(values))
-		for i, v := range values {
-			if err = json.Unmarshal([]byte(v), &outArray[i]); err != nil {
+		outArray := make([]interface{}, 0, len(values))
+		for _, v := range values {
+			var item interface{}
+			if err = json.Unmarshal([]byte(v), &item); err != nil {
 				err = fmt.Errorf("error unmarshaling parameter '%s' as json", param.Name)
 				return
 			}
+			outArray = append(outArray, item)
 		}
 		outValue = outArray
 	}
@@ -923,7 +930,29 @@ func multipartBodyDecoder(body io.Reader, header http.Header, schema *openapi3.S
 		subEncFn := func(string) *openapi3.Encoding { return enc }
 		// If the property's schema has type "array" it is means that the form contains a few parts with the same name.
 		// Every such part has a type that is defined by an items schema in the property's schema.
-		valueSchema := schema.Value.Properties[name]
+		var valueSchema *openapi3.SchemaRef
+		var exists bool
+		valueSchema, exists = schema.Value.Properties[name]
+		if !exists {
+			anyProperties := schema.Value.AdditionalPropertiesAllowed
+			if anyProperties != nil {
+				switch *anyProperties {
+				case true:
+					//additionalProperties: true
+					continue
+				default:
+					//additionalProperties: false
+					return nil, &ParseError{Kind: KindOther, Cause: fmt.Errorf("part %s: undefined", name)}
+				}
+			}
+			if schema.Value.AdditionalProperties == nil {
+				return nil, &ParseError{Kind: KindOther, Cause: fmt.Errorf("part %s: undefined", name)}
+			}
+			valueSchema, exists = schema.Value.AdditionalProperties.Value.Properties[name]
+			if !exists {
+				return nil, &ParseError{Kind: KindOther, Cause: fmt.Errorf("part %s: undefined", name)}
+			}
+		}
 		if valueSchema.Value.Type == "array" {
 			valueSchema = valueSchema.Value.Items
 		}
@@ -938,9 +967,18 @@ func multipartBodyDecoder(body io.Reader, header http.Header, schema *openapi3.S
 		values[name] = append(values[name], value)
 	}
 
+	allTheProperties := make(map[string]*openapi3.SchemaRef)
+	for k, v := range schema.Value.Properties {
+		allTheProperties[k] = v
+	}
+	if schema.Value.AdditionalProperties != nil {
+		for k, v := range schema.Value.AdditionalProperties.Value.Properties {
+			allTheProperties[k] = v
+		}
+	}
 	// Make an object value from form values.
 	obj := make(map[string]interface{})
-	for name, prop := range schema.Value.Properties {
+	for name, prop := range allTheProperties {
 		vv := values[name]
 		if len(vv) == 0 {
 			continue

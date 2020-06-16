@@ -924,7 +924,11 @@ func TestDecodeParameter(t *testing.T) {
 						Version: "0.1",
 					}
 					spec := &openapi3.Swagger{OpenAPI: "3.0.0", Info: info}
-					op := &openapi3.Operation{OperationID: "test", Parameters: []*openapi3.ParameterRef{{Value: tc.param}}, Responses: make(openapi3.Responses)}
+					op := &openapi3.Operation{
+						OperationID: "test",
+						Parameters:  []*openapi3.ParameterRef{{Value: tc.param}},
+						Responses:   openapi3.NewResponses(),
+					}
 					spec.AddOperation("/test"+path, http.MethodGet, op)
 					router := NewRouter()
 					require.NoError(t, router.AddSwagger(spec), "failed to create a router")
@@ -977,6 +981,27 @@ func TestDecodeBody(t *testing.T) {
 		{name: "c", contentType: "text/plain", data: strings.NewReader("c2")},
 		{name: "d", contentType: "application/json", data: bytes.NewReader(d)},
 		{name: "f", contentType: "application/octet-stream", data: strings.NewReader("foo"), filename: "f1"},
+	})
+	require.NoError(t, err)
+
+	multipartFormExtraPart, multipartFormMimeExtraPart, err := newTestMultipartForm([]*testFormPart{
+		{name: "a", contentType: "text/plain", data: strings.NewReader("a1")},
+		{name: "x", contentType: "text/plain", data: strings.NewReader("x1")},
+	})
+	require.NoError(t, err)
+
+	multipartAnyAdditionalProps, multipartMimeAnyAdditionalProps, err := newTestMultipartForm([]*testFormPart{
+		{name: "a", contentType: "text/plain", data: strings.NewReader("a1")},
+		{name: "x", contentType: "text/plain", data: strings.NewReader("x1")},
+	})
+	multipartAdditionalProps, multipartMimeAdditionalProps, err := newTestMultipartForm([]*testFormPart{
+		{name: "a", contentType: "text/plain", data: strings.NewReader("a1")},
+		{name: "x", contentType: "text/plain", data: strings.NewReader("x1")},
+	})
+	multipartAdditionalPropsErr, multipartMimeAdditionalPropsErr, err := newTestMultipartForm([]*testFormPart{
+		{name: "a", contentType: "text/plain", data: strings.NewReader("a1")},
+		{name: "x", contentType: "text/plain", data: strings.NewReader("x1")},
+		{name: "y", contentType: "text/plain", data: strings.NewReader("y1")},
 	})
 	require.NoError(t, err)
 
@@ -1059,6 +1084,45 @@ func TestDecodeBody(t *testing.T) {
 				WithProperty("d", openapi3.NewObjectSchema().WithProperty("d1", openapi3.NewStringSchema())).
 				WithProperty("f", openapi3.NewStringSchema().WithFormat("binary")),
 			want: map[string]interface{}{"a": "a1", "b": float64(10), "c": []interface{}{"c1", "c2"}, "d": map[string]interface{}{"d1": "d1"}, "f": "foo"},
+		},
+		{
+			name: "multipartExtraPart",
+			mime: multipartFormMimeExtraPart,
+			body: multipartFormExtraPart,
+			schema: openapi3.NewObjectSchema().
+				WithProperty("a", openapi3.NewStringSchema()),
+			want:    map[string]interface{}{"a": "a1"},
+			wantErr: &ParseError{Kind: KindOther},
+		},
+		{
+			name: "multipartAnyAdditionalProperties",
+			mime: multipartMimeAnyAdditionalProps,
+			body: multipartAnyAdditionalProps,
+			schema: openapi3.NewObjectSchema().
+				WithAnyAdditionalProperties().
+				WithProperty("a", openapi3.NewStringSchema()),
+			want: map[string]interface{}{"a": "a1"},
+		},
+		{
+			name: "multipartWithAdditionalProperties",
+			mime: multipartMimeAdditionalProps,
+			body: multipartAdditionalProps,
+			schema: openapi3.NewObjectSchema().
+				WithAdditionalProperties(openapi3.NewObjectSchema().
+					WithProperty("x", openapi3.NewStringSchema())).
+				WithProperty("a", openapi3.NewStringSchema()),
+			want: map[string]interface{}{"a": "a1", "x": "x1"},
+		},
+		{
+			name: "multipartWithAdditionalPropertiesError",
+			mime: multipartMimeAdditionalPropsErr,
+			body: multipartAdditionalPropsErr,
+			schema: openapi3.NewObjectSchema().
+				WithAdditionalProperties(openapi3.NewObjectSchema().
+					WithProperty("x", openapi3.NewStringSchema())).
+				WithProperty("a", openapi3.NewStringSchema()),
+			want:    map[string]interface{}{"a": "a1", "x": "x1"},
+			wantErr: &ParseError{Kind: KindOther},
 		},
 		{
 			name: "file",

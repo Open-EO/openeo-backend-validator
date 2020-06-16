@@ -145,11 +145,11 @@ func (router *Router) FindRoute(method string, url *url.URL) (*Route, map[string
 	swagger := router.swagger
 
 	// Get server
-	// servers := swagger.Servers
+	//servers := swagger.Servers
 	var server *openapi3.Server
+
 	var remainingPath string
 	var pathParams map[string]string
-	remainingPath = url.Path
 	// if len(servers) == 0 {
 	// 	remainingPath = url.Path
 	// } else {
@@ -170,7 +170,7 @@ func (router *Router) FindRoute(method string, url *url.URL) (*Route, map[string
 	// 		pathParams[name] = value
 	// 	}
 	// }
-
+	remainingPath = url.Path
 	// Get PathItem
 	root := router.node()
 	var route *Route

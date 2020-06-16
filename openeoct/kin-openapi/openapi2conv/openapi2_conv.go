@@ -11,6 +11,7 @@ import (
 	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
 )
 
+// ToV3Swagger converts an OpenAPIv2 spec to an OpenAPIv3 spec
 func ToV3Swagger(swagger *openapi2.Swagger) (*openapi3.Swagger, error) {
 	result := &openapi3.Swagger{
 		OpenAPI:    "3.0.2",
@@ -156,6 +157,11 @@ func ToV3Parameter(parameter *openapi2.Parameter) (*openapi3.ParameterRef, *open
 	if parameter == nil {
 		return nil, nil, nil
 	}
+	if ref := parameter.Ref; len(ref) > 0 {
+		return &openapi3.ParameterRef{
+			Ref: ToV3Ref(ref),
+		}, nil, nil
+	}
 	in := parameter.In
 	if in == "body" {
 		result := &openapi3.RequestBody{
@@ -209,7 +215,7 @@ func ToV3Response(response *openapi2.Response) (*openapi3.ResponseRef, error) {
 		}, nil
 	}
 	result := &openapi3.Response{
-		Description: response.Description,
+		Description: &response.Description,
 	}
 	if schemaRef := response.Schema; schemaRef != nil {
 		result.WithJSONSchemaRef(ToV3SchemaRef(schemaRef))
@@ -251,6 +257,7 @@ func ToV3SchemaRef(schema *openapi3.SchemaRef) *openapi3.SchemaRef {
 var ref2To3 = map[string]string{
 	"#/definitions/": "#/components/schemas/",
 	"#/responses/":   "#/components/responses/",
+	"#/parameters/":  "#/components/parameters/",
 }
 
 func ToV3Ref(ref string) string {
@@ -302,8 +309,8 @@ func ToV3SecurityScheme(securityScheme *openapi2.SecurityScheme) (*openapi3.Secu
 		flows := &openapi3.OAuthFlows{}
 		result.Flows = flows
 		scopesMap := make(map[string]string)
-		for _, scope := range securityScheme.Scopes {
-			scopesMap[scope] = ""
+		for scope, desc := range securityScheme.Scopes {
+			scopesMap[scope] = desc
 		}
 		flow := &openapi3.OAuthFlow{
 			AuthorizationURL: securityScheme.AuthorizationURL,
@@ -367,6 +374,7 @@ func FromV3Swagger(swagger *openapi3.Swagger) (*openapi2.Swagger, error) {
 		if pathItem == nil {
 			continue
 		}
+		result.AddOperation(path, "GET", nil)
 		for method, operation := range pathItem.Operations() {
 			if operation == nil {
 				continue
@@ -376,6 +384,21 @@ func FromV3Swagger(swagger *openapi3.Swagger) (*openapi2.Swagger, error) {
 				return nil, err
 			}
 			result.AddOperation(path, method, resultOperation)
+		}
+		params := openapi2.Parameters{}
+		for _, param := range pathItem.Parameters {
+			p, err := FromV3Parameter(param)
+			if err != nil {
+				return nil, err
+			}
+			params = append(params, p)
+		}
+		result.Paths[path].Parameters = params
+	}
+	result.Parameters = map[string]*openapi2.Parameter{}
+	for name, param := range swagger.Components.Parameters {
+		if result.Parameters[name], err = FromV3Parameter(param); err != nil {
+			return nil, err
 		}
 	}
 	if m := swagger.Components.SecuritySchemes; m != nil {
@@ -594,8 +617,12 @@ func FromV3Response(ref *openapi3.ResponseRef) (*openapi2.Response, error) {
 	if response == nil {
 		return nil, nil
 	}
+	description := ""
+	if desc := response.Description; desc != nil {
+		description = *desc
+	}
 	result := &openapi2.Response{
-		Description: response.Description,
+		Description: description,
 	}
 	if content := response.Content; content != nil {
 		if ct := content["application/json"]; ct != nil {
@@ -643,8 +670,8 @@ func FromV3SecurityScheme(swagger *openapi3.Swagger, ref *openapi3.SecuritySchem
 			} else {
 				return nil, nil
 			}
-			for scope := range flow.Scopes {
-				result.Scopes = append(result.Scopes, scope)
+			for scope, desc := range flow.Scopes {
+				result.Scopes[scope] = desc
 			}
 		}
 	default:

@@ -1,5 +1,6 @@
 url="https://earthengine.openeo.org/v1.0"
-openapi="https://gist.githubusercontent.com/m-mohr/265efe594ee168e9ca122b6d47d9b8fd/raw/7feac299d188f8d79a286b4883946694e92c111d/openapi.json"
+openapi="openapi_1_0_0rc2.yaml"
+#openapi="https://gist.githubusercontent.com/m-mohr/265efe594ee168e9ca122b6d47d9b8fd/raw/7feac299d188f8d79a286b4883946694e92c111d/openapi.json"
 username="group1"
 password="test123"
 authurl="/credentials/basic"
@@ -29,7 +30,7 @@ authurl="/credentials/basic"
 
   [endpoints.endpoint4]
   id = "service_types"
-  url = "/service_types"
+  url = "/udf_runtimes"
   request_type = "GET"
 
   [endpoints.endpoint5]

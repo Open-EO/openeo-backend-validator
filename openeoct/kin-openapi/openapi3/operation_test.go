@@ -40,7 +40,7 @@ func operationWithoutResponses() *Operation {
 
 func operationWithResponses() *Operation {
 	initOperation()
-	operation.AddResponse(200, NewResponse())
+	operation.AddResponse(200, NewResponse().WithDescription("some response"))
 	return operation
 }
 
@@ -53,7 +53,7 @@ func TestOperationValidation(t *testing.T) {
 		{
 			"when no Responses object is provided",
 			operationWithoutResponses(),
-			errors.New("Variable 'Responses' must be a JSON object"),
+			errors.New("value of responses must be a JSON object"),
 		},
 		{
 			"when a Responses object is provided",

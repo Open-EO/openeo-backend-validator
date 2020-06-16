@@ -19,6 +19,9 @@ var (
 	// SchemaErrorDetailsDisabled disables printing of details about schema errors.
 	SchemaErrorDetailsDisabled = false
 
+	//SchemaFormatValidationDisabled disables validation of schema type formats.
+	SchemaFormatValidationDisabled = false
+
 	errSchema = errors.New("Input does not match the schema")
 
 	ErrSchemaInputNaN = errors.New("NaN is not allowed")
@@ -98,9 +101,6 @@ type Schema struct {
 	MaxProps             *uint64               `json:"maxProperties,omitempty" yaml:"maxProperties,omitempty"`
 	AdditionalProperties *SchemaRef            `json:"-" multijson:"additionalProperties,omitempty" yaml:"-"`
 	Discriminator        *Discriminator        `json:"discriminator,omitempty" yaml:"discriminator,omitempty"`
-
-	PatternProperties         string `json:"patternProperties,omitempty" yaml:"patternProperties,omitempty"`
-	compiledPatternProperties *compiledPattern
 }
 
 func NewSchema() *Schema {
@@ -122,9 +122,9 @@ func (schema *Schema) NewRef() *SchemaRef {
 }
 
 func NewOneOfSchema(schemas ...*Schema) *Schema {
-	refs := make([]*SchemaRef, len(schemas))
-	for i, schema := range schemas {
-		refs[i] = &SchemaRef{Value: schema}
+	refs := make([]*SchemaRef, 0, len(schemas))
+	for _, schema := range schemas {
+		refs = append(refs, &SchemaRef{Value: schema})
 	}
 	return &Schema{
 		OneOf: refs,
@@ -132,9 +132,9 @@ func NewOneOfSchema(schemas ...*Schema) *Schema {
 }
 
 func NewAnyOfSchema(schemas ...*Schema) *Schema {
-	refs := make([]*SchemaRef, len(schemas))
-	for i, schema := range schemas {
-		refs[i] = &SchemaRef{Value: schema}
+	refs := make([]*SchemaRef, 0, len(schemas))
+	for _, schema := range schemas {
+		refs = append(refs, &SchemaRef{Value: schema})
 	}
 	return &Schema{
 		AnyOf: refs,
@@ -142,9 +142,9 @@ func NewAnyOfSchema(schemas ...*Schema) *Schema {
 }
 
 func NewAllOfSchema(schemas ...*Schema) *Schema {
-	refs := make([]*SchemaRef, len(schemas))
-	for i, schema := range schemas {
-		refs[i] = &SchemaRef{Value: schema}
+	refs := make([]*SchemaRef, 0, len(schemas))
+	for _, schema := range schemas {
+		refs = append(refs, &SchemaRef{Value: schema})
 	}
 	return &Schema{
 		AllOf: refs,
@@ -254,6 +254,11 @@ func (schema *Schema) WithExclusiveMax(value bool) *Schema {
 
 func (schema *Schema) WithEnum(values ...interface{}) *Schema {
 	schema.Enum = values
+	return schema
+}
+
+func (schema *Schema) WithDefault(defaultValue interface{}) *Schema {
+	schema.Default = defaultValue
 	return schema
 }
 
@@ -434,7 +439,7 @@ func (schema *Schema) IsEmpty() bool {
 }
 
 func (schema *Schema) Validate(c context.Context) error {
-	return schema.validate(c, make([]*Schema, 2))
+	return schema.validate(c, []*Schema{})
 }
 
 func (schema *Schema) validate(c context.Context, stack []*Schema) (err error) {
@@ -494,7 +499,9 @@ func (schema *Schema) validate(c context.Context, stack []*Schema) (err error) {
 			switch format {
 			case "float", "double":
 			default:
-				// return unsupportedFormat(format)
+				if !SchemaFormatValidationDisabled {
+					return unsupportedFormat(format)
+				}
 			}
 		}
 	case "integer":
@@ -502,7 +509,9 @@ func (schema *Schema) validate(c context.Context, stack []*Schema) (err error) {
 			switch format {
 			case "int32", "int64":
 			default:
-				// return unsupportedFormat(format)
+				if !SchemaFormatValidationDisabled {
+					return unsupportedFormat(format)
+				}
 			}
 		}
 	case "string":
@@ -518,8 +527,8 @@ func (schema *Schema) validate(c context.Context, stack []*Schema) (err error) {
 			case "json-pointer", "relative-json-pointer":
 			default:
 				// Try to check for custom defined formats
-				if _, ok := SchemaStringFormats[format]; !ok {
-					// return unsupportedFormat(format)
+				if _, ok := SchemaStringFormats[format]; !ok && !SchemaFormatValidationDisabled {
+					return unsupportedFormat(format)
 				}
 			}
 		}
@@ -1050,24 +1059,6 @@ func (schema *Schema) visitJSONObject(value map[string]interface{}, fast bool) (
 		}
 	}
 
-	// "patternProperties"
-	var cp *compiledPattern
-	patternProperties := schema.PatternProperties
-	if len(patternProperties) > 0 {
-		cp = schema.compiledPatternProperties
-		if cp == nil {
-			re, err := regexp.Compile(patternProperties)
-			if err != nil {
-				return fmt.Errorf("Error while compiling regular expression '%s': %v", patternProperties, err)
-			}
-			cp = &compiledPattern{
-				Regexp:    re,
-				ErrReason: "JSON property doesn't match the regular expression '" + patternProperties + "'",
-			}
-			schema.compiledPatternProperties = cp
-		}
-	}
-
 	// "additionalProperties"
 	var additionalProperties *Schema
 	if ref := schema.AdditionalProperties; ref != nil {
@@ -1092,15 +1083,6 @@ func (schema *Schema) visitJSONObject(value map[string]interface{}, fast bool) (
 		}
 		allowed := schema.AdditionalPropertiesAllowed
 		if additionalProperties != nil || allowed == nil || (allowed != nil && *allowed) {
-			if cp != nil {
-				if !cp.Regexp.MatchString(k) {
-					return &SchemaError{
-						Schema:      schema,
-						SchemaField: "patternProperties",
-						Reason:      cp.ErrReason,
-					}
-				}
-			}
 			if additionalProperties != nil {
 				if err := additionalProperties.VisitJSON(v); err != nil {
 					if fast {
@@ -1126,12 +1108,12 @@ func (schema *Schema) visitJSONObject(value map[string]interface{}, fast bool) (
 			if fast {
 				return errSchema
 			}
-			return &SchemaError{
+			return markSchemaErrorKey(&SchemaError{
 				Value:       value,
 				Schema:      schema,
 				SchemaField: "required",
 				Reason:      fmt.Sprintf("Property '%s' is missing", k),
-			}
+			}, k)
 		}
 	}
 	return
@@ -1176,9 +1158,9 @@ func markSchemaErrorIndex(err error, index int) error {
 
 func (err *SchemaError) JSONPointer() []string {
 	reversePath := err.reversePath
-	path := make([]string, len(reversePath))
-	for i := range path {
-		path[i] = reversePath[len(path)-1-i]
+	path := append([]string(nil), reversePath...)
+	for left, right := 0, len(path)-1; left < right; left, right = left+1, right-1 {
+		path[left], path[right] = path[right], path[left]
 	}
 	return path
 }
