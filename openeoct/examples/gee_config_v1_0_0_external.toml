@@ -26,7 +26,6 @@ authurl="/credentials/basic"
   url = "/asdasd"
   request_type = "GET"
   group = "capabilities"
-  optional = true
 
   [endpoints.endpoint4]
   id = "service_types"

@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -72,6 +73,8 @@ func (ct *ComplianceTest) validateAll() map[string](map[string]string) {
 					err_msg := err.output
 					err_msg = strings.Replace(err_msg, "\n", "", -1)
 					err_msg = strings.Replace(err_msg, "\"", "'", -1)
+					space := regexp.MustCompile(`\s+`)
+					err_msg = space.ReplaceAllString(err_msg, " ")
 					err.output = err_msg
 					return_err["input"] = err.input
 					return_err["error"] = err.msg
@@ -288,18 +291,18 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 		return "Invalid", errormsg
 	}
 
-	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+	if resp.StatusCode == 404 {
 		errormsg := new(ErrorMessage)
 		errormsg.input = endpoint.Url
 		errormsg.msg = "Endpoint was not found"
 		errormsg.output = "Response Code " + strconv.Itoa(resp.StatusCode)
 		return "Missing", errormsg
-	} else if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+	} else if resp.StatusCode >= 400 && resp.StatusCode < 600 {
 		errormsg := new(ErrorMessage)
 		errormsg.input = endpoint.Url
-		errormsg.msg = "Server Error"
+		errormsg.msg = "An client or server error occured!"
 		errormsg.output = "Response Code " + strconv.Itoa(resp.StatusCode)
-		return "ServerError", errormsg
+		return "Error", errormsg
 	}
 
 	var (
@@ -406,7 +409,7 @@ func main() {
 	if apperr != nil {
 		log.Fatal(apperr)
 	}
-	// config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
+	// config = ReadConfig("examples/eodc_config_v1_0.toml") //"examples/gee_config_v1_0_0_external.toml")
 
 	// config file read correctly
 	if config.Url == "" {
@@ -461,7 +464,7 @@ func main() {
 				result_json[group]["endpoints"] = make(map[string](map[string]string))
 			}
 			result_json[group]["endpoints"].(map[string](map[string]string))[ep.Url] = result[ep.Id]
-			if result[ep.Id]["state"] != "Valid" {
+			if result[ep.Id]["state"] != "Valid" && result[ep.Id]["state"] != "Missing" {
 				result_json[group]["group_summary"] = "Invalid"
 			}
 		}
