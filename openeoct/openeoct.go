@@ -167,7 +167,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 		errormsg.input = string(ct.apifile)
 		errormsg.msg = "Error reading the openEO API, neighter file nor url found"
 		errormsg.output = string(err.Error())
-		return "Error1", errormsg
+		return "Error", errormsg
 	}
 
 	router := openapi3filter.NewRouter().WithSwagger(swagger)
@@ -189,7 +189,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 			errormsg.input = string(ct.backend.url + ct.authendpoint)
 			errormsg.msg = "Error calling the authentication url"
 			errormsg.output = string(errResp.Error())
-			return "Error1.5", errormsg
+			return "Error", errormsg
 
 		} else if resp.StatusCode == 200 {
 			body, _ := ioutil.ReadAll(resp.Body)
@@ -198,6 +198,10 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 			token, _ = m["access_token"].(string)
 
 		}
+	}
+
+	if endpoint.Url == "/credentials/basic" {
+		return "Valid", nil
 	}
 
 	// Define Request
