@@ -442,7 +442,8 @@ func main() {
 	for name, ep := range config.Endpoints {
 		//log.Println("Ep:", string(ep))
 		if ep.Id == "" {
-			ep.Id = name
+			name_split := strings.Split(name, ".")
+			ep.Id = name_split[len(name_split)-1]
 		}
 
 		if ep.Group == "" {
@@ -467,7 +468,10 @@ func main() {
 				result_json[group]["group_summary"] = "Valid"
 				result_json[group]["endpoints"] = make(map[string](map[string]string))
 			}
-			result_json[group]["endpoints"].(map[string](map[string]string))[ep.Url] = result[ep.Id]
+
+			result_json[group]["endpoints"].(map[string](map[string]string))[ep.Id] = result[ep.Id]
+			result_json[group]["endpoints"].(map[string](map[string]string))[ep.Id]["url"] = ep.Url
+			result_json[group]["endpoints"].(map[string](map[string]string))[ep.Id]["type"] = ep.Request_type
 			if result[ep.Id]["state"] != "Valid" && result[ep.Id]["state"] != "Missing" {
 				result_json[group]["group_summary"] = "Invalid"
 			}
