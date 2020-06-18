@@ -63,19 +63,20 @@ authurl="/credentials/basic"
   request_type = "GET"
 
   [endpoints.endpoint11]
+  group = "POST"
   id = "endpoint4d"
   url = "/validation"
   request_type = "POST"
   body = "examples/body/processgraph_gee"
 
-  [endpoints.endpoint12]
-  id = "endpoint5"
-  url = "/result"
-  request_type = "POST"
-  body = "examples/body/processgraph_gee"
+#  [endpoints.endpoint12]
+#  id = "endpoint5"
+#  url = "/result"
+#  request_type = "POST"
+#  body = "examples/body/processgraph_gee"
 
-  [endpoints.endpoint13]
-  id = "endpoint6"
-  url = "/process_graphs"
-  request_type = "POST"
-  body = "examples/body/processgraph_endpoint_gee"
+#  [endpoints.endpoint13]
+#  id = "endpoint6"
+#  url = "/process_graphs"
+#  request_type = "POST"
+#  body = "examples/body/processgraph_endpoint_gee"

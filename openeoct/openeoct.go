@@ -298,14 +298,14 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 	if resp.StatusCode == 404 {
 		errormsg := new(ErrorMessage)
 		errormsg.input = endpoint.Url
-		errormsg.msg = "Endpoint was not found"
-		errormsg.output = "Response Code " + strconv.Itoa(resp.StatusCode)
+		errormsg.msg = "Response Code " + strconv.Itoa(resp.StatusCode)
+		errormsg.output = string(body)
 		return "Missing", errormsg
 	} else if resp.StatusCode >= 400 && resp.StatusCode < 600 {
 		errormsg := new(ErrorMessage)
 		errormsg.input = endpoint.Url
-		errormsg.msg = "An client or server error occured!"
-		errormsg.output = "Response Code " + strconv.Itoa(resp.StatusCode)
+		errormsg.msg = "Response Code " + strconv.Itoa(resp.StatusCode)
+		errormsg.output = string(body)
 		return "Error", errormsg
 	}
 
@@ -413,7 +413,8 @@ func main() {
 	if apperr != nil {
 		log.Fatal(apperr)
 	}
-	// config = ReadConfig("examples/eodc_config_v1_0.toml") //"examples/gee_config_v1_0_0_external.toml")
+	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
+	//config = ReadConfig("examples/eodc_config_v1_0.toml")
 
 	// config file read correctly
 	if config.Url == "" {
