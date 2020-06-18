@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+
+	//"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -92,7 +93,7 @@ func (ct *ComplianceTest) validateAll() map[string](map[string]string) {
 	return states
 }
 
-func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url bool) (*http.Request, string) {
+func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url bool) (*http.Request, *ErrorMessage) {
 
 	method := http.MethodGet
 
@@ -122,10 +123,11 @@ func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url 
 
 		dat, err := ioutil.ReadFile(endpoint.Body)
 		if err != nil {
-			// errormsg := new(ErrorMessage)
-			// errormsg.msg = "Error loading body file: " + err.Error()
-			// return "Error0", errormsg
-			return httpReq, ""
+			errormsg := new(ErrorMessage)
+			errormsg.input = endpoint.Id
+			errormsg.msg = "Error loading body file: " + string(endpoint.Body)
+			errormsg.output = string(err.Error())
+			return httpReq, errormsg
 		}
 
 		stringReader := strings.NewReader(string(dat))
@@ -135,12 +137,16 @@ func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url 
 	} else if os.IsNotExist(err) {
 		// path/to/whatever does *not* exist
 		if !(endpoint.Body == "") {
-			log.Println(endpoint.Url, ": Body was set in config file, but the file does not exist: ", endpoint.Body)
-			return httpReq, fmt.Sprintf("%s: Body was set in config file, but the file does not exist: %s", endpoint.Url, endpoint.Body)
+			errormsg := new(ErrorMessage)
+			errormsg.input = endpoint.Id
+			errormsg.msg = "Body was set in config file, but the file does not exist: " + endpoint.Body
+			errormsg.output = string(err.Error())
+			//log.Println(endpoint.Url, ": Body was set in config file, but the file does not exist: ", endpoint.Body)
+			return httpReq, errormsg //fmt.Sprintf("%s: Body was set in config file, but the file does not exist: %s", endpoint.Url, endpoint.Body)
 		}
 	}
 
-	return httpReq, ""
+	return httpReq, nil
 
 }
 
@@ -207,12 +213,12 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 	// Define Request
 	httpReq, errReq := ct.buildRequest(endpoint, token, false)
 
-	if errReq != "" {
-		errormsg := new(ErrorMessage)
-		errormsg.input = "Endpoint " + string(endpoint.Url) + " with token " + string(token)
-		errormsg.msg = "Error processing the Config file"
-		errormsg.output = string(errReq)
-		return "Invalid", errormsg
+	if errReq != nil {
+		//errormsg := new(ErrorMessage)
+		//errormsg.input = "Endpoint " + string(endpoint.Url) + " with token " + string(token)
+		//errormsg.msg = "Error processing the Config file"
+		//errormsg.output = string(errReq)
+		return "Error", errReq
 	}
 
 	// Find route in openAPI definition
