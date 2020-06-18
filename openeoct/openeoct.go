@@ -58,29 +58,52 @@ type ComplianceTest struct {
 
 // Validates all enpoints defined in the compliance test instance.
 // Returns a map of strings containing the states of the validation results
-func (ct *ComplianceTest) validateAll() map[string](map[string]string) {
+func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorMessage) {
 
 	states := make(map[string](map[string]string))
 
+	token := ""
+
+	authentication_err := new(ErrorMessage)
+
+	// Set Authentication Token
+	if ct.username != "" && ct.password != "" && ct.authendpoint != "" {
+
+		client := &http.Client{}
+
+		httpReq, _ := http.NewRequest(http.MethodGet, ct.backend.url+ct.authendpoint, nil)
+		httpReq.SetBasicAuth(ct.username, ct.password)
+		resp, errResp := client.Do(httpReq)
+
+		if errResp != nil {
+			authentication_err.input = string(ct.backend.url + ct.authendpoint)
+			authentication_err.msg = "Error calling the authentication url! Wrong credentials?"
+			authentication_err.output = string(errResp.Error())
+
+		} else if resp.StatusCode == 200 {
+			body, _ := ioutil.ReadAll(resp.Body)
+			m := make(map[string]interface{})
+			json.Unmarshal(body, &m)
+			token, _ = m["access_token"].(string)
+			authentication_err = nil
+		} else {
+			authentication_err.input = string(ct.backend.url + ct.authendpoint)
+			authentication_err.msg = "Error calling the authentication url! Wrong credentials?"
+			authentication_err.output = ""
+		}
+	} else {
+		authentication_err = nil
+	}
+
 	for _, endpoints := range ct.endpoints {
 		for _, endpoint := range endpoints {
-			state, err := ct.validate(endpoint)
+			state, err := ct.validate(endpoint, token)
 			states[endpoint.Id] = make(map[string]string)
 			states[endpoint.Id]["state"] = state
 
 			if err != nil {
 				if endpoint.Optional == false {
-					return_err := make(map[string]string)
-					err_msg := err.output
-					err_msg = strings.Replace(err_msg, "\n", "", -1)
-					err_msg = strings.Replace(err_msg, "\"", "'", -1)
-					space := regexp.MustCompile(`\s+`)
-					err_msg = space.ReplaceAllString(err_msg, " ")
-					err.output = err_msg
-					return_err["input"] = err.input
-					return_err["error"] = err.msg
-					return_err["details"] = err.output
-					states[endpoint.Id]["message"] = "Input: " + err.input + "; Error: " + err.msg + "; Details: " + err.output
+					states[endpoint.Id]["message"] = err.toString()
 				} else {
 					states[endpoint.Id]["message"] = "Non-mandatory endpoint, not supported by back-end"
 					states[endpoint.Id]["state"] = "Valid"
@@ -90,7 +113,17 @@ func (ct *ComplianceTest) validateAll() map[string](map[string]string) {
 			}
 		}
 	}
-	return states
+	return states, authentication_err
+}
+
+func (err *ErrorMessage) toString() string {
+	err_msg := err.output
+	err_msg = strings.Replace(err_msg, "\n", "", -1)
+	err_msg = strings.Replace(err_msg, "\"", "'", -1)
+	space := regexp.MustCompile(`\s+`)
+	err_msg = space.ReplaceAllString(err_msg, " ")
+	err.output = err_msg
+	return "Input: " + err.input + "; Error: " + err.msg + "; Details: " + err.output
 }
 
 func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url bool) (*http.Request, *ErrorMessage) {
@@ -152,10 +185,16 @@ func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url 
 
 // Validates a single endpoint defined as input parameter.
 // Returns the resulting state and an error message if something went wrong.
-func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
+func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *ErrorMessage) {
 	//log.Println(openapi3.SchemaStringFormats)
 	//openapi3.DefineStringFormat("url", `^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 	//log.Println(openapi3.SchemaStringFormats)
+
+	if token != "" {
+		if endpoint.Url == "/credentials/basic" {
+			return "Valid", nil
+		}
+	}
 
 	_, err := os.Stat(ct.apifile)
 
@@ -179,45 +218,10 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 	router := openapi3filter.NewRouter().WithSwagger(swagger)
 	ctx := context.TODO()
 
-	token := ""
-
-	// Set Authentication Token
-	if ct.username != "" && ct.password != "" && ct.authendpoint != "" {
-
-		client := &http.Client{}
-
-		httpReq, _ := http.NewRequest(http.MethodGet, ct.backend.url+ct.authendpoint, nil)
-		httpReq.SetBasicAuth(ct.username, ct.password)
-		resp, errResp := client.Do(httpReq)
-
-		if errResp != nil {
-			errormsg := new(ErrorMessage)
-			errormsg.input = string(ct.backend.url + ct.authendpoint)
-			errormsg.msg = "Error calling the authentication url"
-			errormsg.output = string(errResp.Error())
-			return "Error", errormsg
-
-		} else if resp.StatusCode == 200 {
-			body, _ := ioutil.ReadAll(resp.Body)
-			m := make(map[string]interface{})
-			json.Unmarshal(body, &m)
-			token, _ = m["access_token"].(string)
-
-		}
-	}
-
-	if endpoint.Url == "/credentials/basic" {
-		return "Valid", nil
-	}
-
 	// Define Request
 	httpReq, errReq := ct.buildRequest(endpoint, token, false)
 
 	if errReq != nil {
-		//errormsg := new(ErrorMessage)
-		//errormsg.input = "Endpoint " + string(endpoint.Url) + " with token " + string(token)
-		//errormsg.msg = "Error processing the Config file"
-		//errormsg.output = string(errReq)
 		return "Error", errReq
 	}
 
@@ -284,10 +288,8 @@ func (ct *ComplianceTest) validate(endpoint Endpoint) (string, *ErrorMessage) {
 	if resp.StatusCode == 401 {
 		errormsg := new(ErrorMessage)
 		errormsg.input = "Header Auth: " + execReq.Header.Get("Authorization")
-		errormsg.msg = "Error: Authentication failed, currently only BasicAuth is supported."
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(resp.Body)
-		errormsg.output = buf.String()
+		errormsg.msg = "Error: Basic Authentication failed."
+		errormsg.output = string(body)
 		return "Invalid", errormsg
 	}
 
@@ -463,7 +465,11 @@ func main() {
 	ct.endpoints = ep_groups
 
 	// Run validation
-	result := ct.validateAll()
+	result, err := ct.validateAll()
+
+	if err != nil {
+		log.Println(err.toString())
+	}
 
 	var result_json map[string](map[string]interface{})
 	result_json = make(map[string](map[string]interface{}))
