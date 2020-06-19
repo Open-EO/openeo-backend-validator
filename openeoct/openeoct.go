@@ -620,7 +620,7 @@ func main() {
 	}
 
 	//config = ReadConfig("examples/gee_config_v1_0.json")
-	config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
+	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 	//config = ReadConfig("examples/eodc_config_v1_0.toml")
 
 	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
