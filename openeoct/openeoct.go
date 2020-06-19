@@ -65,6 +65,7 @@ type ComplianceTest struct {
 	authendpoint string
 	username     string
 	password     string
+	output       string
 }
 
 // Elements of the Config file
@@ -521,7 +522,6 @@ func (ct *ComplianceTest) fromConfig(config Config) {
 	if config.Config != "" {
 		config_ext := ReadConfig(config.Config)
 		ct.fromConfig(config_ext)
-
 	}
 
 	if config.Variables != nil {
@@ -533,6 +533,10 @@ func (ct *ComplianceTest) fromConfig(config Config) {
 	// }
 	if config.Url != "" {
 		ct.backend.baseurl = ReturnConfigValue(config.Url)
+	}
+
+	if config.Output != "" {
+		ct.output = ReturnConfigValue(config.Output)
 	}
 
 	if config.Backendversion != "" {
@@ -588,8 +592,10 @@ func (ct *ComplianceTest) fromConfig(config Config) {
 func main() {
 
 	// Config file path
-	var config Config
-	//var config_ext Config
+	//var config Config
+	//var config_ep Config
+
+	ct := new(ComplianceTest)
 
 	// CLI handling
 	app := cli.NewApp()
@@ -606,7 +612,9 @@ func main() {
 			Usage:   "load from config file",
 			Action: func(c *cli.Context) error {
 				//configfile = c.Args().First()
-				config = ReadConfig(c.Args().First())
+				for i := 0; i < c.Args().Len(); i++ {
+					ct.fromConfig(ReadConfig(c.Args().Get(i)))
+				}
 				//log.Println("Configfile1: ", config.Url)
 				return nil
 			},
@@ -625,9 +633,9 @@ func main() {
 
 	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 	// define back end and compliance test instance
-	ct := new(ComplianceTest)
 
-	ct.fromConfig(config)
+	//ct.fromConfig(config)
+	//ct.fromConfig(config_ep)
 
 	// config file read correctly
 	if ct.backend.url == "" {
@@ -664,7 +672,7 @@ func main() {
 
 	jsonString, _ := json.MarshalIndent(result_json, "", "    ")
 
-	output := ReturnConfigValue(config.Output)
+	output := ReturnConfigValue(ct.output)
 
 	// Write to log stdout or to output file
 	if output == "" {
