@@ -1,76 +1,128 @@
-{
-
- "title": "NDVI based on Sentinel 2",
- "description": "Deriving minimum NDVI measurements over pixel time series of Sentinel 2",
-
- "process_graph": 
-{
-  "NDVI1": {
-    "process_id": "NDVI",
-    "result": false,
-    "arguments": {
-      "data": {
-        "from_node": "filtertemporal1"
+{ "process": {
+  "process_graph": {
+    "loadcollection1": {
+      "process_id": "load_collection",
+      "arguments": {
+        "id": "COPERNICUS/S2",
+        "spatial_extent": {
+          "west": 16.138916,
+          "south": 48.2,
+          "east": 16.524124,
+          "north": 48.320647,
+          "crs": "EPSG:4326"
+        },
+        "temporal_extent": [
+          "2017-01-01T00:00:00Z",
+          "2017-01-31T23:59:59Z"
+        ],
+        "bands": [
+          "B4",
+          "B8"
+        ]
       }
-    }
-  },
-  "filtertemporal1": {
-    "process_id": "filter_temporal",
-    "result": false,
-    "arguments": {
-      "extent": ["2017-01-01T00:00:00Z", "2017-01-31T23:59:59Z"],
-      "data": {
-        "from_node": "filterbbox1"
-      }
-    }
-  },
-  "loadcollection1": {
-    "process_id": "load_collection",
-    "result": false,
-    "arguments": {
-      "spatial_extent": null,
-      "temporal_extent": null,
-      "id": "COPERNICUS/S2"
-    }
-  },
-  "filterbbox1": {
-    "process_id": "filter_bbox",
-    "result": false,
-    "arguments": {
-      "extent": {
-      "north": 48.320647,
-      "west": 16.138916,
-      "south": 48.1386,
-      "east": 16.524124,
-      "crs": "EPSG:4326"
-      },
-      "data": {
-        "from_node": "loadcollection1"
-      }
-    }
-  },
-  "reduce1": {
-    "process_id": "reduce",
-    "result": false,
-    "arguments": {
-      "dimension": "temporal",
-      "data": {
-        "from_node": "NDVI1"
-      },
-      "reducer": {
-        "callback": {
-          "r1": {
-            "process_id": "min",
-            "result": true,
-            "arguments": {
-              "data": {
-                "from_argument": "data"
+    },
+    "reducedimension1": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "loadcollection1"
+        },
+        "reducer": {
+          "process_graph": {
+            "arrayelement1": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "B8"
               }
+            },
+            "arrayelement2": {
+              "process_id": "array_element",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                },
+                "label": "B4"
+              }
+            },
+            "normalizeddifference1": {
+              "process_id": "normalized_difference",
+              "arguments": {
+                "x": {
+                  "from_node": "arrayelement1"
+                },
+                "y": {
+                  "from_node": "arrayelement2"
+                }
+              },
+              "result": true
+            }
+          }
+        },
+        "dimension": "bands"
+      }
+    },
+    "reducedimension2": {
+      "process_id": "reduce_dimension",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension1"
+        },
+        "reducer": {
+          "process_graph": {
+            "min1": {
+              "process_id": "min",
+              "arguments": {
+                "data": {
+                  "from_parameter": "data"
+                }
+              },
+              "result": true
+            }
+          }
+        },
+        "dimension": "t"
+      }
+    },
+    "apply1": {
+      "process_id": "apply",
+      "arguments": {
+        "data": {
+          "from_node": "reducedimension2"
+        },
+        "process": {
+          "process_graph": {
+            "linearscalerange1": {
+              "process_id": "linear_scale_range",
+              "arguments": {
+                "inputMax": 1,
+                "inputMin": -1,
+                "outputMax": 255,
+                "x": {
+                  "from_parameter": "x"
+                }
+              },
+              "result": true
             }
           }
         }
       }
+    },
+    "saveresult1": {
+      "process_id": "save_result",
+      "arguments": {
+        "data": {
+          "from_node": "apply1"
+        },
+        "format": "GTIFF-THUMB",
+        "options": {
+          "size": null,
+          "epsgCode": null
+        }
+      },
+      "result": true
     }
   }
-}
-}
+}}

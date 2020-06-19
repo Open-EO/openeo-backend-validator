@@ -3,11 +3,20 @@ config="examples/additional_config.toml"
 #output="output.json"
   	
 [endpoints]
-#  [endpoints.endpoint1]
-#  url = "/jobs"
-#  request_type = "GET"
-#  optional = true
-#  group = "capabilities"
+  [endpoints.jobs]
+  url = "/jobs"
+  request_type = "POST"
+  body = "examples/body/processgraph_endpoint_gee"
+  timeout = 20
+  #optional = true
+  #group = "capabilities"
+
+  [endpoints.jobs2]
+  url = "/jobs/{job_id}"
+  request_type = "GET"
+  #body = "examples/body/processgraph_endpoint_gee"
+  #optional = true
+  #group = "capabilities"
 
   [endpoints.endpoint2]
   url = "{test}"

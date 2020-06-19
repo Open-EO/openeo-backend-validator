@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3"
 	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3filter"
@@ -43,6 +44,7 @@ type Endpoint struct {
 	Header       string
 	Optional     bool
 	Group        string
+	Timeout      int
 	// Add auth and that stuff
 }
 
@@ -306,6 +308,11 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 	// Send request
 	client := &http.Client{}
 
+	// Set timeout if given
+	if endpoint.Timeout != 0 {
+		client.Timeout = time.Duration(endpoint.Timeout) * time.Second
+	}
+
 	execReq, errReq := ct.buildRequest(endpoint, token, true)
 
 	resp, err := client.Do(execReq)
@@ -378,6 +385,16 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 		errormsg.msg = "Response of the back end not valid"
 		errormsg.output = err.Error()
 		return "Invalid", errormsg
+	}
+
+	//Set Job Id in the compliance test instance
+	if endpoint.Url == "/jobs" && endpoint.Request_type == "POST" {
+		ct.variables["job_id"] = resp.Header.Get("OpenEO-Identifier")
+	}
+
+	//Set Service Id in the compliance test instance
+	if endpoint.Url == "/services" && endpoint.Request_type == "POST" {
+		ct.variables["service_id"] = resp.Header.Get("OpenEO-Identifier")
 	}
 
 	return "Valid", nil
