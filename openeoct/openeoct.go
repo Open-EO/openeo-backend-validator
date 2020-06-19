@@ -50,10 +50,24 @@ type Endpoint struct {
 type ComplianceTest struct {
 	backend      BackEnd
 	apifile      string
+	variables    map[string]string
 	endpoints    map[string][]Endpoint
 	authendpoint string
 	username     string
 	password     string
+}
+
+// Elements of the Config file
+type Config struct {
+	Url       string
+	Openapi   string
+	Username  string
+	Password  string
+	Authurl   string
+	Endpoints map[string]Endpoint
+	Output    string
+	Config    string
+	Variables map[string]string
 }
 
 // Validates all enpoints defined in the compliance test instance.
@@ -97,6 +111,7 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 
 	for _, endpoints := range ct.endpoints {
 		for _, endpoint := range endpoints {
+			endpoint.loadVariablesToEndpoint(*ct)
 			state, err := ct.validate(endpoint, token)
 			states[endpoint.Id] = make(map[string]string)
 			states[endpoint.Id]["state"] = state
@@ -114,6 +129,29 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 		}
 	}
 	return states, authentication_err
+}
+
+func loadVariable(value string, variables map[string]string) string {
+	var_name := GetStringInBetween(value, "{", "}")
+	if var_name != "" {
+		val, ok := variables[var_name]
+
+		if ok == true {
+			return strings.ReplaceAll(value, "{"+var_name+"}", val)
+		} else {
+			return value
+		}
+	}
+	return value
+}
+
+func (ep *Endpoint) loadVariablesToEndpoint(ct ComplianceTest) {
+	ep.Body = loadVariable(ep.Body, ct.variables)
+	ep.Group = loadVariable(ep.Group, ct.variables)
+	ep.Id = loadVariable(ep.Id, ct.variables)
+	ep.Request_type = loadVariable(ep.Request_type, ct.variables)
+	ep.Url = loadVariable(ep.Url, ct.variables)
+
 }
 
 func (err *ErrorMessage) toString() string {
@@ -345,33 +383,58 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 	return "Valid", nil
 }
 
-// Elements of the Config file
-
-type Config struct {
-	Url       string
-	Openapi   string
-	Username  string
-	Password  string
-	Authurl   string
-	Endpoints map[string]Endpoint
-	Output    string
-}
-
 // Reads info from config file
 func ReadConfig(config_file string) Config {
 	var configfile = config_file
+	var config Config
+
+	// Check if file exists
 	_, err := os.Stat(configfile)
 	if err != nil {
 		log.Fatal("Config file is missing: ", configfile)
 	}
 
-	var config Config
+	// Read file if TOML File
+
 	if _, err := toml.DecodeFile(configfile, &config); err != nil {
-		log.Fatal(err)
+
+		//Read file as JSON File
+		data, err2 := ioutil.ReadFile(config_file)
+
+		if err2 != nil {
+			log.Println("Error reading Config file as TOML: ", err)
+			log.Fatal("Error reading Config file as JSON: ", err2)
+		}
+		err2 = json.Unmarshal(data, &config)
+		if err2 != nil {
+			log.Fatal("Error reading JSON config file:", err2)
+		}
+
 	}
+
+	// TODO Read file if JSON File
+
 	//log.Print(config.Index)
 	return config
 }
+
+// Reads info from JSON config file
+// func ReadVarConfig(config Config) Config {
+// 	var configfile = config.Config
+// 	_, err := os.Stat(configfile)
+// 	if err != nil {
+// 		log.Fatal("JSON Config file is missing: ", configfile)
+// 	}
+
+// 	data, err := ioutil.ReadFile(config)
+
+// 	var config Config
+// 	if _, err := json.DecodeFile(configfile, &config); err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	//log.Print(config.Index)
+// 	return config
+// }
 
 // Reads info from config file
 func ReturnConfigValue(config_item string) string {
@@ -388,11 +451,87 @@ func ReturnConfigValue(config_item string) string {
 	return config_value
 }
 
+// GetStringInBetween Returns empty string if no start string found
+func GetStringInBetween(str string, start string, end string) (result string) {
+	s := strings.Index(str, start)
+	if s == -1 {
+		return
+	}
+	s += len(start)
+	e := strings.Index(str, end)
+	if e == -1 {
+		return
+	}
+	return str[s:e]
+}
+
+func (ct *ComplianceTest) fromConfig(config Config) {
+
+	if config.Config != "" {
+		config_ext := ReadConfig(config.Config)
+		ct.fromConfig(config_ext)
+
+	}
+
+	if config.Variables != nil {
+		ct.variables = config.Variables
+	}
+
+	// for name, ep := range ct.variables {
+	// 	log.Println(name + " -- " + ep)
+	// }
+	if config.Url != "" {
+		ct.backend.url = ReturnConfigValue(config.Url)
+	}
+	if config.Openapi != "" {
+		ct.apifile = ReturnConfigValue(config.Openapi)
+	}
+
+	if config.Username != "" {
+		ct.username = ReturnConfigValue(config.Username)
+	}
+	if config.Password != "" {
+		ct.password = ReturnConfigValue(config.Password)
+	}
+	// ct.authendpoint = ReturnConfigValue(config.Authurl)
+
+	if config.Authurl == "" {
+		ct.authendpoint = "/credentials/basic"
+	} else {
+		ct.authendpoint = ReturnConfigValue(config.Authurl)
+	}
+
+	if config.Password != "" {
+		ct.password = ReturnConfigValue(config.Password)
+	}
+
+	if config.Endpoints != nil {
+		var ep_groups map[string][]Endpoint
+		ep_groups = make(map[string][]Endpoint)
+		for name, ep := range config.Endpoints {
+			//log.Println("Ep:", string(ep))
+			if ep.Id == "" {
+				name_split := strings.Split(name, ".")
+				ep.Id = name_split[len(name_split)-1]
+			}
+
+			if ep.Group == "" {
+				ep.Group = "nogroup"
+			}
+
+			ep_groups[ep.Group] = append(ep_groups[ep.Group], ep)
+		}
+
+		ct.endpoints = ep_groups
+	}
+}
+
 // Main function
 func main() {
 
 	// Config file path
 	var config Config
+	//var config_ext Config
 
 	// CLI handling
 	app := cli.NewApp()
@@ -421,48 +560,21 @@ func main() {
 	if apperr != nil {
 		log.Fatal(apperr)
 	}
+
+	//config = ReadConfig("examples/gee_config_v1_0.json")
 	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 	//config = ReadConfig("examples/eodc_config_v1_0.toml")
 
-	// config file read correctly
-	if config.Url == "" {
-		log.Println("Error: No config file specified")
-	}
-
-	// config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
+	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 	// define back end and compliance test instance
 	ct := new(ComplianceTest)
 
-	ct.backend.url = ReturnConfigValue(config.Url)
-	ct.apifile = ReturnConfigValue(config.Openapi)
+	ct.fromConfig(config)
 
-	ct.username = ReturnConfigValue(config.Username)
-	ct.password = ReturnConfigValue(config.Password)
-	// ct.authendpoint = ReturnConfigValue(config.Authurl)
-
-	if config.Authurl == "" {
-		ct.authendpoint = "/credentials/basic"
-	} else {
-		ct.authendpoint = ReturnConfigValue(config.Authurl)
+	// config file read correctly
+	if ct.backend.url == "" {
+		log.Println("Error: No config file or backend url specified")
 	}
-
-	var ep_groups map[string][]Endpoint
-	ep_groups = make(map[string][]Endpoint)
-	for name, ep := range config.Endpoints {
-		//log.Println("Ep:", string(ep))
-		if ep.Id == "" {
-			name_split := strings.Split(name, ".")
-			ep.Id = name_split[len(name_split)-1]
-		}
-
-		if ep.Group == "" {
-			ep.Group = "nogroup"
-		}
-
-		ep_groups[ep.Group] = append(ep_groups[ep.Group], ep)
-	}
-
-	ct.endpoints = ep_groups
 
 	// Run validation
 	result, err := ct.validateAll()
@@ -474,8 +586,9 @@ func main() {
 	var result_json map[string](map[string]interface{})
 	result_json = make(map[string](map[string]interface{}))
 
-	for group, endpoints := range ep_groups {
+	for group, endpoints := range ct.endpoints {
 		for _, ep := range endpoints {
+			ep.loadVariablesToEndpoint(*ct)
 			if result_json[group] == nil {
 				result_json[group] = make(map[string]interface{})
 				result_json[group]["group_summary"] = "Valid"
