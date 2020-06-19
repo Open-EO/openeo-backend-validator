@@ -5,7 +5,7 @@ openapi="openapi_1_0_0rc2.yaml"
 username="group1"
 password="test123"
 authurl="/credentials/basic"
-output="test.json"
+#output="test.json"
 [variables]
   test = "/"
   test2 = "GET"

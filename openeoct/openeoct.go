@@ -480,9 +480,9 @@ func (be *BackEnd) loadUrl() {
 	if be.version != "" {
 
 		// Get backend version
-		//well_known := be.baseurl + "/.well-known"
+		well_known := be.baseurl + "/.well-known/openeo"
 		client := &http.Client{}
-		httpReq, _ := http.NewRequest(http.MethodGet, be.baseurl, nil)
+		httpReq, _ := http.NewRequest(http.MethodGet, well_known, nil)
 		resp, errResp := client.Do(httpReq)
 
 		if errResp != nil {
@@ -506,9 +506,9 @@ func (be *BackEnd) loadUrl() {
 				}
 			}
 			if be.url == "" {
+				log.Println("Warning: Given backend version <"+be.version+"> was not found, using just url: ", be.baseurl)
 				be.url = be.baseurl
 			}
-
 		}
 
 	} else {
