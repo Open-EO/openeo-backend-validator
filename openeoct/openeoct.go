@@ -480,9 +480,9 @@ func (be *BackEnd) loadUrl() {
 	if be.version != "" {
 
 		// Get backend version
-		well_known := be.baseurl + "/.well-known/openeo"
+		//well_known := be.baseurl + "/.well-known/openeo"
 		client := &http.Client{}
-		httpReq, _ := http.NewRequest(http.MethodGet, well_known, nil)
+		httpReq, _ := http.NewRequest(http.MethodGet, be.baseurl, nil)
 		resp, errResp := client.Do(httpReq)
 
 		if errResp != nil {
