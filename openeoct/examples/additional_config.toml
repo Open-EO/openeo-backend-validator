@@ -1,4 +1,5 @@
-url="https://earthengine.openeo.org/v1.0"
+url="https://earthengine.openeo.org"
+backendversion = "1.0.0-rc.2"
 openapi="openapi_1_0_0rc2.yaml"
 #openapi="https://gist.githubusercontent.com/m-mohr/265efe594ee168e9ca122b6d47d9b8fd/raw/7feac299d188f8d79a286b4883946694e92c111d/openapi.json"
 username="group1"

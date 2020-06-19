@@ -1,19 +1,18 @@
-
 config="examples/additional_config.toml"
 #output="output.json"
   	
 [endpoints]
-  [endpoints.jobs]
-  url = "/jobs"
-  request_type = "POST"
-  body = "examples/body/processgraph_endpoint_gee"
-  timeout = 20
+#  [endpoints.jobs]
+#  url = "/jobs"
+#  request_type = "POST"
+#  body = "examples/body/processgraph_endpoint_gee"
+#  timeout = 20
   #optional = true
   #group = "capabilities"
 
-  [endpoints.jobs2]
-  url = "/jobs/{job_id}"
-  request_type = "GET"
+#  [endpoints.jobs2]
+#  url = "/jobs/{job_id}"
+#  request_type = "GET"
   #body = "examples/body/processgraph_endpoint_gee"
   #optional = true
   #group = "capabilities"
@@ -24,7 +23,7 @@ config="examples/additional_config.toml"
 
   [endpoints.endpoint3]
   id = "output_formats"
-  url = "/output_formats"
+  url = "/.well-known/openeo"
   request_type = "{test2}"
 
 #  [endpoints.endpoint4]

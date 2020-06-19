@@ -19,6 +19,7 @@ import (
 	"github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3filter"
 
 	"github.com/BurntSushi/toml"
+	"github.com/mcuadros/go-version"
 	"github.com/urfave/cli"
 )
 
@@ -31,8 +32,15 @@ type ErrorMessage struct {
 
 // Back end "class"
 type BackEnd struct {
-	url string
+	url     string
+	baseurl string
+	version string
+
 	// Add auth and that stuff
+}
+
+type WellKnown struct {
+	versions []map[string]string
 }
 
 // Endpoint "class"
@@ -61,15 +69,16 @@ type ComplianceTest struct {
 
 // Elements of the Config file
 type Config struct {
-	Url       string
-	Openapi   string
-	Username  string
-	Password  string
-	Authurl   string
-	Endpoints map[string]Endpoint
-	Output    string
-	Config    string
-	Variables map[string]string
+	Url            string
+	Openapi        string
+	Username       string
+	Password       string
+	Authurl        string
+	Endpoints      map[string]Endpoint
+	Output         string
+	Config         string
+	Variables      map[string]string
+	Backendversion string
 }
 
 // Validates all enpoints defined in the compliance test instance.
@@ -183,7 +192,12 @@ func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url 
 	httpReq, _ := http.NewRequest(method, endpoint.Url, nil)
 
 	if abs_url == true {
-		httpReq, _ = http.NewRequest(method, ct.backend.url+endpoint.Url, nil)
+		if strings.Contains(endpoint.Url, ".well-known") {
+			httpReq, _ = http.NewRequest(method, ct.backend.baseurl+endpoint.Url, nil)
+			return httpReq, nil
+		} else {
+			httpReq, _ = http.NewRequest(method, ct.backend.url+endpoint.Url, nil)
+		}
 	}
 
 	if token != "" {
@@ -424,34 +438,13 @@ func ReadConfig(config_file string) Config {
 		}
 		err2 = json.Unmarshal(data, &config)
 		if err2 != nil {
-			log.Fatal("Error reading JSON config file:", err2)
+			log.Println("Error reading Config file as TOML: ", err)
+			log.Fatal("Error reading Config file as JSON:", err2)
 		}
-
 	}
 
-	// TODO Read file if JSON File
-
-	//log.Print(config.Index)
 	return config
 }
-
-// Reads info from JSON config file
-// func ReadVarConfig(config Config) Config {
-// 	var configfile = config.Config
-// 	_, err := os.Stat(configfile)
-// 	if err != nil {
-// 		log.Fatal("JSON Config file is missing: ", configfile)
-// 	}
-
-// 	data, err := ioutil.ReadFile(config)
-
-// 	var config Config
-// 	if _, err := json.DecodeFile(configfile, &config); err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	//log.Print(config.Index)
-// 	return config
-// }
 
 // Reads info from config file
 func ReturnConfigValue(config_item string) string {
@@ -482,6 +475,47 @@ func GetStringInBetween(str string, start string, end string) (result string) {
 	return str[s:e]
 }
 
+func (be *BackEnd) loadUrl() {
+	if be.version != "" {
+
+		// Get backend version
+		//well_known := be.baseurl + "/.well-known"
+		client := &http.Client{}
+		httpReq, _ := http.NewRequest(http.MethodGet, be.baseurl, nil)
+		resp, errResp := client.Do(httpReq)
+
+		if errResp != nil {
+			log.Println("Warning: Failed to get backend version url from .wellknown : ", be.baseurl, errResp)
+			log.Println("Warning: Setting URL to base url: ", be.baseurl)
+			be.url = be.baseurl
+		} else {
+			// Get Response
+			wellknown := make(map[string]([]map[string]string))
+
+			body, _ := ioutil.ReadAll(resp.Body)
+
+			json.Unmarshal(body, &wellknown)
+			be_version := version.Normalize(be.version)
+			for val := range wellknown["versions"] {
+
+				wellknown_version := version.Normalize(wellknown["versions"][val]["api_version"])
+
+				if be_version == wellknown_version {
+					be.url = wellknown["versions"][val]["url"]
+				}
+			}
+			if be.url == "" {
+				be.url = be.baseurl
+			}
+
+		}
+
+	} else {
+		be.url = be.baseurl
+	}
+
+}
+
 func (ct *ComplianceTest) fromConfig(config Config) {
 
 	if config.Config != "" {
@@ -498,8 +532,15 @@ func (ct *ComplianceTest) fromConfig(config Config) {
 	// 	log.Println(name + " -- " + ep)
 	// }
 	if config.Url != "" {
-		ct.backend.url = ReturnConfigValue(config.Url)
+		ct.backend.baseurl = ReturnConfigValue(config.Url)
 	}
+
+	if config.Backendversion != "" {
+		ct.backend.version = ReturnConfigValue(config.Backendversion)
+	}
+
+	ct.backend.loadUrl()
+
 	if config.Openapi != "" {
 		ct.apifile = ReturnConfigValue(config.Openapi)
 	}
@@ -579,7 +620,7 @@ func main() {
 	}
 
 	//config = ReadConfig("examples/gee_config_v1_0.json")
-	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
+	config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 	//config = ReadConfig("examples/eodc_config_v1_0.toml")
 
 	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
