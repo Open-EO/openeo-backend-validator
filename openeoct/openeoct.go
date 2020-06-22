@@ -480,13 +480,13 @@ func (be *BackEnd) loadUrl() {
 	if be.version != "" {
 
 		// Get backend version
-		//well_known := be.baseurl + "/.well-known/openeo"
+		well_known := be.baseurl + "/.well-known/openeo"
 		client := &http.Client{}
-		httpReq, _ := http.NewRequest(http.MethodGet, be.baseurl, nil)
+		httpReq, _ := http.NewRequest(http.MethodGet, well_known, nil)
 		resp, errResp := client.Do(httpReq)
 
 		if errResp != nil {
-			log.Println("Warning: Failed to get backend version url from .wellknown : ", be.baseurl, errResp)
+			log.Println("Warning: Failed to get backend version url from .wellknown : ", well_known, errResp)
 			log.Println("Warning: Setting URL to base url: ", be.baseurl)
 			be.url = be.baseurl
 		} else {
