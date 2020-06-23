@@ -404,12 +404,20 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 
 	//Set Job Id in the compliance test instance
 	if endpoint.Url == "/jobs" && endpoint.Request_type == "POST" {
-		ct.variables["job_id"] = resp.Header.Get("OpenEO-Identifier")
+		if resp.Header.Get("OpenEO-Identifier") != "" {
+			ct.variables["job_id"] = resp.Header.Get("OpenEO-Identifier")
+		} else {
+			log.Println("Warning: Not able to catch the job_id from POST /jobs header via 'OpenEO-Identifier' or empty!")
+		}
 	}
 
 	//Set Service Id in the compliance test instance
 	if endpoint.Url == "/services" && endpoint.Request_type == "POST" {
-		ct.variables["service_id"] = resp.Header.Get("OpenEO-Identifier")
+		if resp.Header.Get("OpenEO-Identifier") != "" {
+			ct.variables["service_id"] = resp.Header.Get("OpenEO-Identifier")
+		} else {
+			log.Println("Warning: Not able to catch the service_id from POST /services header via 'OpenEO-Identifier' or empty!")
+		}
 	}
 
 	return "Valid", nil
@@ -517,15 +525,22 @@ func (be *BackEnd) loadUrl() {
 
 }
 
-func (ct *ComplianceTest) fromConfig(config Config) {
+func (ct *ComplianceTest) appendConfig(config Config) {
 
 	if config.Config != "" {
 		config_ext := ReadConfig(config.Config)
-		ct.fromConfig(config_ext)
+		ct.appendConfig(config_ext)
+	}
+
+	if ct.variables == nil {
+		ct.variables = make(map[string]string)
 	}
 
 	if config.Variables != nil {
-		ct.variables = config.Variables
+		for name, value := range config.Variables {
+			ct.variables[name] = value
+		}
+		// ct.variables = config.Variables
 	}
 
 	// for name, ep := range ct.variables {
@@ -583,6 +598,22 @@ func (ct *ComplianceTest) fromConfig(config Config) {
 
 			ep_groups[ep.Group] = append(ep_groups[ep.Group], ep)
 		}
+		// TODO: merge with existing ones
+		// if ct.endpoints != nil {
+		// 	for name, ep := range ct.endpoints {
+		// 		//log.Println("Ep:", string(ep))
+		// 		if ep.Id == "" {
+		// 			name_split := strings.Split(name, ".")
+		// 			ep.Id = name_split[len(name_split)-1]
+		// 		}
+
+		// 		if ep.Group == "" {
+		// 			ep.Group = "nogroup"
+		// 		}
+
+		// 		ep_groups[ep.Group] = append(ep_groups[ep.Group], ep)
+		// 	}
+		// }
 
 		ct.endpoints = ep_groups
 	}
@@ -613,7 +644,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				//configfile = c.Args().First()
 				for i := 0; i < c.Args().Len(); i++ {
-					ct.fromConfig(ReadConfig(c.Args().Get(i)))
+					ct.appendConfig(ReadConfig(c.Args().Get(i)))
 				}
 				//log.Println("Configfile1: ", config.Url)
 				return nil
@@ -627,6 +658,9 @@ func main() {
 		log.Fatal(apperr)
 	}
 
+	// ct.appendConfig(ReadConfig("examples/gee_config_v1_0_0_external.toml"))
+	// ct.appendConfig(ReadConfig("examples/additional_config.toml"))
+	// ct.appendConfig(ReadConfig(c.Args().Get(i)))
 	//config = ReadConfig("examples/gee_config_v1_0.json")
 	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 	//config = ReadConfig("examples/eodc_config_v1_0.toml")
@@ -634,8 +668,8 @@ func main() {
 	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
 	// define back end and compliance test instance
 
-	//ct.fromConfig(config)
-	//ct.fromConfig(config_ep)
+	//ct.appendConfig(config)
+	//ct.appendConfig(config_ep)
 
 	// config file read correctly
 	if ct.backend.url == "" {

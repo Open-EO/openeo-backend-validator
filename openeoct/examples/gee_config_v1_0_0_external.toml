@@ -1,6 +1,6 @@
 #config="examples/additional_config.toml"
 #output="output.json"
-  	
+ 	
 [endpoints]
 #  [endpoints.jobs]
 #  url = "/jobs"
@@ -51,10 +51,14 @@
   url = "/collections/{test3}"
   request_type = "GET"
 
-#  [endpoints.endpoint12]
-#  id = "endpoint5"
-#  url = "/result"
-#  request_type = "POST"
+  [endpoints.job_send]
+  url = "/jobs"
+  request_type = "POST"
+  body = "examples/body/{gee_graph}"
+
+  [endpoints.job_read]
+  url = "/jobs/{job_id}"
+  request_type = "GET"
 #  body = "examples/body/processgraph_gee"
 
 #  [endpoints.endpoint13]
