@@ -66,6 +66,7 @@ type ComplianceTest struct {
 	username     string
 	password     string
 	output       string
+	debug        bool
 }
 
 // Elements of the Config file
@@ -245,6 +246,10 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 	//openapi3.DefineStringFormat("url", `^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 	//log.Println(openapi3.SchemaStringFormats)
 
+	if ct.debug == true {
+		log.Println("====Endpoint " + endpoint.Id + "====")
+	}
+
 	if token != "" {
 		if endpoint.Url == "/credentials/basic" {
 			return "Valid", nil
@@ -278,6 +283,20 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 
 	if errReq != nil {
 		return "Error", errReq
+	}
+
+	if ct.debug == true {
+		log.Println("---Request---")
+		log.Println("URL: ", string(httpReq.URL.RequestURI()))
+		log.Println("Method: ", httpReq.Method)
+		jsonString, _ := json.Marshal(httpReq.Header)
+		log.Println("Header: ", string(jsonString))
+		if httpReq.Body != nil {
+			reqbody, _ := ioutil.ReadAll(httpReq.Body)
+			log.Println("Body: ", string(reqbody))
+		} else {
+			log.Println("Body: Empty")
+		}
 	}
 
 	// Find route in openAPI definition
@@ -342,6 +361,19 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 
 	// Get Response
 	body, err := ioutil.ReadAll(resp.Body)
+
+	if ct.debug == true {
+		log.Println("---Response---")
+		log.Println("Status Code: ", resp.StatusCode)
+		jsonString, _ := json.Marshal(resp.Header)
+		log.Println("Header: ", string(jsonString))
+		if body != nil {
+			//reqbody, _ := ioutil.ReadAll(httpReq.Body)
+			log.Println("Body: ", string(body))
+		} else {
+			log.Println("Body: Empty")
+		}
+	}
 
 	// log.Println(string(body))
 
@@ -635,6 +667,12 @@ func main() {
 	app.Version = "1.0.0"
 	app.Usage = "validating a back end against an openapi description file!"
 
+	app.Flags = []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "debug",
+			Usage: "activate debug info",
+		},
+	}
 	// add config command
 	app.Commands = []*cli.Command{
 		{
@@ -645,6 +683,10 @@ func main() {
 				//configfile = c.Args().First()
 				for i := 0; i < c.Args().Len(); i++ {
 					ct.appendConfig(ReadConfig(c.Args().Get(i)))
+
+				}
+				if c.Bool("debug") {
+					ct.debug = true
 				}
 				//log.Println("Configfile1: ", config.Url)
 				return nil
@@ -659,7 +701,7 @@ func main() {
 	}
 
 	//ct.appendConfig(ReadConfig("examples/gee_config_v1_0_0_external.toml"))
-	//ct.appendConfig(ReadConfig("examples/additional_config.toml"))
+	//ct.appendConfig(ReadConfig("examples/eodc_config_v1_0.toml"))
 	// ct.appendConfig(ReadConfig(c.Args().Get(i)))
 	//config = ReadConfig("examples/gee_config_v1_0.json")
 	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")

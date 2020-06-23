@@ -1,4 +1,4 @@
-#config="examples/additional_config.toml"
+config="examples/additional_config.toml"
 #output="output.json"
  	
 [endpoints]
