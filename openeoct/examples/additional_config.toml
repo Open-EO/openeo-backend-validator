@@ -7,16 +7,18 @@ password="test123"
 authurl="/credentials/basic"
 #output="test.json"
 
-#[variables]
-#  test = "/"
-#  test2 = "GET"
-#  test3 = "FIRMS"
-#  gee_graph = "processgraph_endpoint_gee"
-#[endpoints]
-#  [endpoints.job_write]
-#  url = "/jobs"
-#  request_type = "POST"
-#  body = "examples/body/processgraph_endpoint_gee"
+[variables]
+  test = "/"
+  test2 = "GET"
+  test3 = "FIRMS"
+  gee_graph = "processgraph_endpoint_gee"
+
+[endpoints]
+  [endpoints.job_write]
+  url = "/processes"
+  request_type = "GET"
+  group = "ADDITIONAL"
+  # body = "examples/body/processgraph_endpoint_gee"
 
 # [endpoints.job_read]
 # url = "/jobs/ziDqkGf3whpkaQSC"

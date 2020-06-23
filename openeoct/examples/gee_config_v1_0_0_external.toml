@@ -17,9 +17,10 @@
   #optional = true
   #group = "capabilities"
 
-  [endpoints.endpoint2]
+  [endpoints.job_write]
   url = "{test}"
   request_type = "GET"
+  group = "ADDITIONAL"
 
   [endpoints.endpoint3]
   id = "output_formats"

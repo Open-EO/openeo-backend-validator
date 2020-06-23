@@ -598,22 +598,22 @@ func (ct *ComplianceTest) appendConfig(config Config) {
 
 			ep_groups[ep.Group] = append(ep_groups[ep.Group], ep)
 		}
-		// TODO: merge with existing ones
-		// if ct.endpoints != nil {
-		// 	for name, ep := range ct.endpoints {
-		// 		//log.Println("Ep:", string(ep))
-		// 		if ep.Id == "" {
-		// 			name_split := strings.Split(name, ".")
-		// 			ep.Id = name_split[len(name_split)-1]
-		// 		}
+		// merge with existing ones
+		if ct.endpoints != nil {
+			for name, group := range ct.endpoints {
 
-		// 		if ep.Group == "" {
-		// 			ep.Group = "nogroup"
-		// 		}
+				for _, ep := range group {
+					//log.Println(ep)
+					if ep.Id == "" {
+						name_split := strings.Split(name, ".")
+						ep.Id = name_split[len(name_split)-1]
+					}
 
-		// 		ep_groups[ep.Group] = append(ep_groups[ep.Group], ep)
-		// 	}
-		// }
+					ep_groups[name] = append(ep_groups[name], ep)
+				}
+
+			}
+		}
 
 		ct.endpoints = ep_groups
 	}
@@ -658,8 +658,8 @@ func main() {
 		log.Fatal(apperr)
 	}
 
-	// ct.appendConfig(ReadConfig("examples/gee_config_v1_0_0_external.toml"))
-	// ct.appendConfig(ReadConfig("examples/additional_config.toml"))
+	//ct.appendConfig(ReadConfig("examples/gee_config_v1_0_0_external.toml"))
+	//ct.appendConfig(ReadConfig("examples/additional_config.toml"))
 	// ct.appendConfig(ReadConfig(c.Args().Get(i)))
 	//config = ReadConfig("examples/gee_config_v1_0.json")
 	//config = ReadConfig("examples/gee_config_v1_0_0_external.toml")
