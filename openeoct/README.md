@@ -187,7 +187,7 @@ password="test123"
 To run the tool on the command line, provide the configuration file using the `config` command.
 Example usage with the example `gee_config.toml` config file:
 
-    ./openeoct config gee_config.toml
+    ./openeoct config gee_config1.toml gee_config2.toml gee_config3.json ...
 
 (On Windows: use "`openeoct.exe`" instead of "`openeoct`").
 
