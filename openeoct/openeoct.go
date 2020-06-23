@@ -538,7 +538,7 @@ func (ct *ComplianceTest) appendConfig(config Config) {
 
 	if config.Variables != nil {
 		for name, value := range config.Variables {
-			ct.variables[name] = value
+			ct.variables[name] = ReturnConfigValue(value)
 		}
 		// ct.variables = config.Variables
 	}

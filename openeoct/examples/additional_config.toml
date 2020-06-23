@@ -1,11 +1,11 @@
 url="https://earthengine.openeo.org"
 backendversion = "1.0.0-rc.2"
-openapi="openapi_1_0_0rc2.yaml"
-#openapi="https://gist.githubusercontent.com/m-mohr/265efe594ee168e9ca122b6d47d9b8fd/raw/7feac299d188f8d79a286b4883946694e92c111d/openapi.json"
+#openapi="openapi_1_0_0rc2.yaml"
+openapi="https://gist.githubusercontent.com/bgoesswe/8459bd57202e05a2951c130a2168ce3a/raw/8a43112d027df58f1e8fd3c069d975cee5087fd8/openeoapi-1.0.0rc2.json"
 username="group1"
 password="test123"
 authurl="/credentials/basic"
-#output="test.json"
+output="test.json"
 
 [variables]
   test = "/"

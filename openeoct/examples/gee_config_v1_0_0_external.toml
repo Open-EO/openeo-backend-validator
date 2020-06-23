@@ -2,20 +2,20 @@
 #output="output.json"
  	
 [endpoints]
-#  [endpoints.jobs]
-#  url = "/jobs"
-#  request_type = "POST"
-#  body = "examples/body/processgraph_endpoint_gee"
-#  timeout = 20
-  #optional = true
-  #group = "capabilities"
+  [endpoints.jobs]
+ url = "/jobs"
+  request_type = "POST"
+  body = "examples/body/processgraph_endpoint_gee"
+  timeout = 20
+  optional = true
+  group = "capabilities"
 
-#  [endpoints.jobs2]
-#  url = "/jobs/{job_id}"
-#  request_type = "GET"
-  #body = "examples/body/processgraph_endpoint_gee"
-  #optional = true
-  #group = "capabilities"
+  [endpoints.jobs2]
+  url = "/jobs/{job_id}"
+  request_type = "GET"
+  body = "examples/body/processgraph_endpoint_gee"
+  optional = false
+  group = "capabilities"
 
   [endpoints.job_write]
   url = "{test}"
@@ -27,10 +27,10 @@
   url = "/.well-known/openeo"
   request_type = "{test2}"
 
-#  [endpoints.endpoint4]
-#  id = "service_types"
-#  url = "/udf_runtimes"
-#  request_type = "GET"
+  [endpoints.endpoint4]
+  id = "service_types"
+  url = "/udf_runtimes"
+  request_type = "GET"
 
   [endpoints.endpoint5]
   id = "{test2}"
