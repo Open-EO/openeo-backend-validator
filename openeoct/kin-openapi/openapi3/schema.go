@@ -523,6 +523,8 @@ func (schema *Schema) validate(c context.Context, stack []*Schema) (err error) {
 			case "regex":
 			case "time", "email", "idn-email":
 			case "hostname", "idn-hostname", "ipv4", "ipv6":
+			// Added for openeoct:
+			case "commonmark":
 			case "uri", "uri-reference", "iri", "iri-reference", "uri-template":
 			case "json-pointer", "relative-json-pointer":
 			default:
