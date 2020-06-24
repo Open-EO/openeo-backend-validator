@@ -28,8 +28,10 @@ In the flask folder there is a simple web application GUI for this tool also ava
 At the moment the tool requires at least one config file in [TOML](https://github.com/toml-lang/toml) or JSON format. In this guide we will focus on the TOML format. The following properties are configurable: 
 
 *  *url (required)* - the base url of the backend that should be validated, if versioning is implemented by the backend (via [/.well-known/openeo](https://openeo.org/documentation/1.0/developers/api/reference.html#operation/connect)) , this has to be the url without the version. So for example `https://earthengine.openeo.org` instead of `https://earthengine.openeo.org/v1.0`.
+
 `url="https://earthengine.openeo.org"`
 *  *openapi (required)* - the openEO openapi(.yaml/.json) file/url it will be validated against 
+
 `openapi="https://gist.githubusercontent.com/bgoesswe/8459bd57202e05a2951c130a2168ce3a/raw/8a43112d027df58f1e8fd3c069d975cee5087fd8/openeoapi-1.0.0rc2.json"`
 *  *endpoints (required)* - list of endpoints that should be tested at the back end. Endpoints can have a group attribute, to structure the output by the groups and an optional attribute, so that the validation does not fail, but prints that it is invalid and not mandatory.
 ```
@@ -39,12 +41,16 @@ At the moment the tool requires at least one config file in [TOML](https://githu
   request_type="GET"
 ```
 * *backendversion* - if the backend supports versioning, you can specify here the version you want to validate. Note that it has to be the exact version of the backend specified at the well-known endpoint of the backend (see "api_version" attribute). If the version does not exist, it will print a warning into the console and uses the base url fom the "url" property.
+
 `backendversion = "1.0.0-rc.2"`
 *  *username* - username of your user at the back end (empty or missing if there is no authentication needed)
+
 `username="myuser"`
 *  *password* - password of the user (empty or missing if there is no authentication needed)
+
 `password="myuser12345"`
 *  *output* - output file, to store the JSON validation results (missing if it should be written into stdout of the terminal)
+
 `output="val_out.json"`
 *  *variables* - list of variables definitions, which can be used in the endpoints.
 ```
@@ -52,6 +58,7 @@ At the moment the tool requires at least one config file in [TOML](https://githu
   myvar = "myvarvalue"
 ```
 *  *config* - additional config file. The validator will merge the configurations, see section below for details.
+
 `config="additional_config.toml"`
 *  *authurl (deprecated)* - the authentication endpoint of the back end (defaults to "/credentials/basic")
 
@@ -84,6 +91,7 @@ In the config file all endpoints need to be defined after the [endpoints] sectio
 
 `body = "examples/body/processgraph_endpoint_gee.json"`
 * *group* - the output is structured via endpoint groups, all endpoints with the same group name are in one group (defaults to "nogroup").
+
 `group = "Process Endpoints"`
 * *optional* - true if the endpoint is optional, meaning that the group validation summary is valid even if it failed (defaults to false).
 
@@ -191,7 +199,21 @@ Example usage with the example `gee_config.toml` config file:
 
 (On Windows: use "`openeoct.exe`" instead of "`openeoct`").
 
-Feel free to add an issue if you ran into problems, but please look first into the existing ones.
+There is also a debug flag when calling the command, which will write the raw requests and resonses into stdout (it needs to be before the "config" parameter:
+```
+./openeoct --debug config gee_config1.toml gee_config2.toml gee_config3.json ...
+```
+
+If not well formated go errors occur, please update the dependencies, they might be outdated:
+```bash
+# The ones that probably need updates:
+go get -u github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3
+go get -u github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3filter
+
+# or updating all installed modules:
+go get -u -m all
+```
+If that does not help feel free to add an issue if you run into problems, but please look first into the existing ones.
 
 
 ### JSON Output
