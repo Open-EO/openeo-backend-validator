@@ -92,6 +92,10 @@ In the config file all endpoints need to be defined after the [endpoints] sectio
 
 `timeout = 20` 
 
+* *order* - Integer to specify the order the endpoint validation should be done. The higher the number the later it will be validated, whereas several endpoints can have the same number. Defaults to 0, which is a special case and will be validated after all ordered endpoints. The order applies within each group (with no group being treated as a seperate group), but not over all specified endpoints.
+
+`order = 1` 
+
 The complete endpoints section in the config file looks similar to:
 ```
 [endpoints]

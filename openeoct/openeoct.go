@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -53,8 +54,27 @@ type Endpoint struct {
 	Optional     bool
 	Group        string
 	Timeout      int
+	Order        int
 	// Add auth and that stuff
 }
+
+// Endpoints sorting "class"
+type ByOrder []Endpoint
+
+func (a ByOrder) Len() int { return len(a) }
+func (a ByOrder) Less(i, j int) bool {
+
+	if a[i].Order == 0 {
+		return false
+	}
+
+	if a[j].Order == 0 {
+		return true
+	}
+
+	return a[i].Order < a[j].Order
+}
+func (a ByOrder) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 // ComplianceTest "class"
 type ComplianceTest struct {
@@ -67,6 +87,7 @@ type ComplianceTest struct {
 	password     string
 	output       string
 	debug        bool
+	router       *openapi3filter.Router
 }
 
 // Elements of the Config file
@@ -123,7 +144,10 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 	}
 
 	for _, endpoints := range ct.endpoints {
+		//Sorting within the group
+		sort.Sort(ByOrder(endpoints))
 		for _, endpoint := range endpoints {
+			//log.Println("Group: " + group + ", Endpoint: " + endpoint.Id)
 			endpoint.loadVariablesToEndpoint(*ct)
 			state, err := ct.validate(endpoint, token)
 			states[endpoint.Id] = make(map[string]string)
@@ -208,8 +232,7 @@ func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url 
 	}
 
 	if _, err := os.Stat(endpoint.Body); err == nil {
-		httpReq.Header.Set("Content-Type", "application/json")
-
+		//httpReq.Header.Set("Content-Type", "application/json")
 		dat, err := ioutil.ReadFile(endpoint.Body)
 		if err != nil {
 			errormsg := new(ErrorMessage)
@@ -232,6 +255,37 @@ func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url 
 			errormsg.output = string(err.Error())
 			//log.Println(endpoint.Url, ": Body was set in config file, but the file does not exist: ", endpoint.Body)
 			return httpReq, errormsg //fmt.Sprintf("%s: Body was set in config file, but the file does not exist: %s", endpoint.Url, endpoint.Body)
+		}
+	}
+
+	// Set the correct request body content type according to the API
+	if endpoint.Body != "" {
+		// Find route in openAPI definition
+		relhttpReq, _ := http.NewRequest(method, endpoint.Url, nil)
+		route, _, errValue := ct.router.FindRoute(relhttpReq.Method, relhttpReq.URL)
+		var content_types openapi3.Content
+		//log.Println("route value: ", route)
+		//log.Println("error value: ", errValue)
+		if errValue != nil {
+			errormsg := new(ErrorMessage)
+			errormsg.input = endpoint.Id
+			errormsg.msg = "Error setting correct content-type for url " + endpoint.Url + " and method " + endpoint.Request_type
+			errormsg.output = string(errValue.Error())
+			return httpReq, errormsg
+		}
+		if method == http.MethodPost {
+			content_types = route.Swagger.Paths.Find(route.Path).Post.RequestBody.Value.Content
+		} else if method == http.MethodPut {
+			content_types = route.Swagger.Paths.Find(route.Path).Put.RequestBody.Value.Content
+		} else if method == http.MethodPatch {
+			content_types = route.Swagger.Paths.Find(route.Path).Patch.RequestBody.Value.Content
+		} else if method == http.MethodDelete {
+			content_types = route.Swagger.Paths.Find(route.Path).Delete.RequestBody.Value.Content
+		}
+
+		for content_type := range content_types {
+			//log.Println(content_type)
+			httpReq.Header.Set("Content-Type", content_type)
 		}
 	}
 
@@ -276,9 +330,10 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 	}
 
 	router := openapi3filter.NewRouter().WithSwagger(swagger)
+	ct.router = router
 	ctx := context.TODO()
 
-	// Define Request
+	// Define Local Request for validation
 	httpReq, errReq := ct.buildRequest(endpoint, token, false)
 
 	if errReq != nil {
@@ -347,13 +402,18 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 		client.Timeout = time.Duration(endpoint.Timeout) * time.Second
 	}
 
+	// execReq, errReq := httpReq, err ct.buildRequest(endpoint, token, true)
 	execReq, errReq := ct.buildRequest(endpoint, token, true)
+
+	if errReq != nil {
+		return "Error", errReq
+	}
 
 	resp, err := client.Do(execReq)
 
 	if err != nil {
 		errormsg := new(ErrorMessage)
-		errormsg.input = string(httpReq.Method) + "  " + string(endpoint.Url)
+		errormsg.input = string(execReq.Method) + "  " + string(endpoint.Url)
 		errormsg.msg = "Error sending request to back end"
 		errormsg.output = string(err.Error())
 		return "Invalid", errormsg
@@ -700,6 +760,7 @@ func main() {
 		log.Fatal(apperr)
 	}
 
+	//ct.debug = true
 	//ct.appendConfig(ReadConfig("examples/gee_config_v1_0_0_external.toml"))
 	//ct.appendConfig(ReadConfig("examples/eodc_config_v1_0.toml"))
 	// ct.appendConfig(ReadConfig(c.Args().Get(i)))

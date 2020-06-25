@@ -1,41 +1,65 @@
-config="examples/additional_config.toml"
+url="https://earthengine.openeo.org"
+backendversion = "1.0.0-rc.2"
+#openapi="openapi_1_0_0rc2.yaml"
+#openapi="openapi_1_0_0rc2.yaml"
+#openapi="https://gist.githubusercontent.com/bgoesswe/8459bd57202e05a2951c130a2168ce3a/raw/8a43112d027df58f1e8fd3c069d975cee5087fd8/openeoapi-1.0.0rc2.json"
+openapi="https://gist.githubusercontent.com/bgoesswe/01111a3da271ba13cf70480e96574c9d/raw/cd6d87bc07684543ff9d549fa8d4039991784b2f/openeoapi_1_0_0rc2_2.json"
+username="group1"
+password="test123"
+
+#config="examples/additional_config.toml"
 #output="output.json"
- 	
+
+[variables]
+  test = "/"
+  test2 = "GET"
+  test3 = "FIRMS"
+  gee_graph = "processgraph_endpoint_gee"
+
 [endpoints]
-  [endpoints.jobs]
- url = "/jobs"
+
+#  [endpoints.runtimes_None]
+#  url = "/udf_runtimes"
+#  request_type = "GET"
+#  group = "capabilities2"
+
+#  [endpoints.wellknown_99]
+#  url = "/.well-known/openeo"
+#  request_type = "{test2}"
+#  group = "capabilities"
+#  order = 99
+
+  [endpoints.post_jobs_1]
+  url = "/jobs"
   request_type = "POST"
   body = "examples/body/processgraph_endpoint_gee"
   timeout = 20
-  optional = true
-  group = "capabilities"
+  group = "capabilities2"
+  order = 1
 
-  [endpoints.jobs2]
+  [endpoints.get_jobs_2]
   url = "/jobs/{job_id}"
   request_type = "GET"
-  body = "examples/body/processgraph_endpoint_gee"
   optional = false
-  group = "capabilities"
+  group = "capabilities2"
+  order = 2
 
-  [endpoints.job_write]
-  url = "{test}"
-  request_type = "GET"
-  group = "ADDITIONAL"
+#  [endpoints.capabilities_2]
+#  url = "{test}"
+#  request_type = "GET"
+#  group = "capabilities"
+#  order = 2
 
-  [endpoints.endpoint3]
-  id = "output_formats"
-  url = "/.well-known/openeo"
-  request_type = "{test2}"
+#[endpoints.filetest]
+#url = "/files/test"
+#request_type="PUT"
+#body="openeoct"
 
-  [endpoints.endpoint4]
-  id = "service_types"
-  url = "/udf_runtimes"
-  request_type = "GET"
-
-  [endpoints.endpoint5]
-  id = "{test2}"
-  url = "/processes/{unknown_var}"
-  request_type = "GET"
+#  [endpoints.endpoint5]
+#  id = "{test2}"
+#  url = "/processes/e"
+#  request_type = "GET"
+#  group = "capabilities"
 
 #  [endpoints.endpoint6]
 #  id = "/services"
@@ -47,19 +71,19 @@ config="examples/additional_config.toml"
 #  url = "/me"
 #  request_type = "GET"
 
-  [endpoints.endpoint10]
-  id = "endpoint3c"
-  url = "/collections/{test3}"
-  request_type = "GET"
+#  [endpoints.endpoint10]
+#  id = "endpoint3c"
+#  url = "/collections/{test3}"
+#  request_type = "GET"
 
-  [endpoints.job_send]
-  url = "/jobs"
-  request_type = "POST"
-  body = "examples/body/{gee_graph}"
+#  [endpoints.job_send]
+#  url = "/jobs"
+#  request_type = "POST"
+#  body = "examples/body/{gee_graph}"
 
-  [endpoints.job_read]
-  url = "/jobs/{job_id}"
-  request_type = "GET"
+#  [endpoints.job_read]
+#  url = "/jobs/{job_id}"
+#  request_type = "GET"
 #  body = "examples/body/processgraph_gee"
 
 #  [endpoints.endpoint13]
