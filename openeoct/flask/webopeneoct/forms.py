@@ -31,9 +31,10 @@ class BackendForm(Form):
     id = IntegerField('Id')
     name = StringField('Name')
     url = StringField('URL')
+    version = StringField('Backend-version')
     openapi = StringField('OpenAPI-URL') #SelectField('Backend', choices=[('0_3_1', '0.3.1'), ('0_4_0', '0.4.0'), ('0_4_1', '0.4.1')])
-    output = StringField('Output')
-    authurl = StringField('Authentication URL')
+    # output = StringField('Output')
+    # authurl = StringField('Authentication URL')
     username = StringField('Authentication Username')
     password = StringField('Authentication Password', widget=PasswordInput(hide_value=False))
 
@@ -48,10 +49,10 @@ class BackendForm(Form):
         """
         self.name.data = backend.name
         self.url.data = backend.url
-        self.authurl.data = backend.authurl
+        self.version.data = backend.version
         self.password.data = backend.password
         self.username.data = backend.username
-        self.output.data = backend.output
+        # self.output.data = backend.output
         self.openapi.data = backend.openapi
         self.id.data = backend.id
 
@@ -66,7 +67,7 @@ class BackendForm(Form):
         """
         default_output = "result_{}.json".format(self.id.data)
         return Backend(self.id.data, self.name.data, self.url.data, self.openapi.data, output=default_output,
-                authurl=self.authurl.data, username=self.username.data, password=self.password.data)
+                version=self.version.data, username=self.username.data, password=self.password.data)
 
 
 class EndpointForm(Form):
@@ -90,18 +91,21 @@ class EndpointForm(Form):
     auth : SelectField
         Set if authentication has to be used or not for the endpoint ('auto' to set it according to the specification)
     """
-    id = IntegerField('Id')
+    id = StringField('Id')
     backend = SelectField('Backend', coerce=int,
                                validators=[
                                    DataRequired('Please select an organisation')])
     url = StringField('URL')
-    type = SelectField('Type', choices=[('GET', 'GET'), ('POST', 'POST'), ('PATCH', 'PATCH'), ('PUT', 'PUT'),
+    type = SelectField('Request Method', choices=[('GET', 'GET'), ('POST', 'POST'), ('PATCH', 'PATCH'), ('PUT', 'PUT'),
                                         ('DELETE', 'DELETE')],
                                validators=[
                                    DataRequired('Please select an organisation')])
     body = TextAreaField('Body', render_kw={'class': 'form-control', 'rows': 20})
-#    head = TextAreaField('Head')
-#    auth = SelectField('Authentication', choices=[('Auto', 'auto'), ('Yes', 'yes'), ('No', 'no')])
+
+    optional = BooleanField("Optional")#SelectField('Optional', choices=[(False, "no"), (True, 'yes')])
+    group = StringField('Group')
+    timeout = IntegerField('Timeout')
+    order = IntegerField('Order')
 
     def __init__(self, *args, **kwargs):
         """
@@ -129,9 +133,25 @@ class EndpointForm(Form):
         self.backend.data = endpoint.backend
         self.url.data = endpoint.url
         self.type.data = endpoint.type
-#        self.body.data = endpoint.body
-#        self.head.data = endpoint.head
-#        self.auth.data = endpoint.auth
+        # self.body.data = endpoint.body
+        self.optional.data = endpoint.optional
+        #if endpoint.optional:
+        #    self.optional.data = (True, "yes")
+        #else:
+        #    self.optional.data = (False, "no")
+        if not endpoint.group:
+            self.group.data = "nogroup"
+        else:
+            self.group.data = endpoint.group
+
+        if not endpoint.timeout:
+            self.timeout.data = 0
+        else:
+            self.timeout.data = endpoint.timeout
+        if not endpoint.order:
+            self.order.data = 0
+        else:
+            self.order.data = endpoint.order
         self.id.data = endpoint.id
 
         body_file = "body_{}".format(self.id.data)
@@ -149,5 +169,5 @@ class EndpointForm(Form):
            endpoint : Endpoint
                Endpoint instance with values of the form.
         """
-        return Endpoint(self.backend.data, self.url.data, self.type.data) #body=self.body.data, head=self.head.data,
+        return Endpoint(self.backend.data, self.url.data, self.type.data, optional=self.optional.data, group=self.group.data, timeout=self.timeout.data, order=self.order.data) #body=self.body.data, head=self.head.data,
                 #auth=self.auth.data)

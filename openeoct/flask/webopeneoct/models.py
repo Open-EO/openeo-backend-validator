@@ -1,5 +1,5 @@
 from openeoct.flask.webopeneoct import db
-
+import requests, os
 
 class Backend(db.Model):
     """
@@ -9,6 +9,7 @@ class Backend(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, unique=True, nullable=False)
     url = db.Column(db.String, nullable=False)
+    version = db.Column(db.String, nullable=False)
     openapi = db.Column(db.String, nullable=False)
     output = db.Column(db.String)
     authurl = db.Column(db.String)
@@ -17,7 +18,7 @@ class Backend(db.Model):
 
     endpoints = db.relationship("Endpoint", lazy="dynamic")
 
-    def __init__(self, id, name, url, openapi, output=None, authurl=None, username=None, password=None):
+    def __init__(self, id, name, url, openapi, version=None, output=None, authurl=None, username=None, password=None):
         self.id = id
         self.name = name
         self.url = url
@@ -26,6 +27,7 @@ class Backend(db.Model):
         self.authurl = authurl
         self.username = username
         self.password = password
+        self.version = version
 
     def set(self, backend):
         """
@@ -44,6 +46,44 @@ class Backend(db.Model):
         self.authurl = backend.authurl
         self.username = backend.username
         self.password = backend.password
+        self.version = backend.version
+
+    def get_url(self):
+        if not self.version:
+            return self.url
+
+        resp = requests.get(self.url+"/.well-known/openeo")
+        versions = resp.json()
+
+        for version in versions.get("versions"):
+            if version.get("api_version") == self.version:
+                return version.get("url")
+
+        return self.url
+
+    def to_json(self):
+        endpoint_list = {}
+        for endpoint in self.endpoints:
+            endpoint_list["endpoints." + str(endpoint.id)] = endpoint.to_json()
+
+        if self.output == "result_None.json":
+            self.output = "result_{}.json".format(self.id)
+            db.session.commit()
+
+        toml_dict = {
+            "url": self.url,
+            "openapi": self.openapi,
+            "username": self.username,
+            "password": self.password,
+            "endpoints": endpoint_list,
+            "output": self.output
+        }
+        if self.version:
+            toml_dict["backendversion"] = self.version
+        if self.authurl:
+            toml_dict["authurl"] = self.authurl
+
+        return toml_dict
 
 
 class Endpoint(db.Model):
@@ -51,22 +91,31 @@ class Endpoint(db.Model):
     Endpoint class that contains all information related to an endpoint,
     including a one-to-many relation to the Backend instance.
     """
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String, primary_key=True)
     url = db.Column(db.String, nullable=False)
     type = db.Column(db.String, nullable=False)
     body = db.Column(db.String)
     head = db.Column(db.String)
     auth = db.Column(db.String)
+    optional = db.Column(db.Boolean)
+    group = db.Column(db.String, primary_key=True)
+    timeout = db.Column(db.Integer)
+    order = db.Column(db.Integer)
 
     backend = db.Column(db.Integer, db.ForeignKey('backend.id'))
 
-    def __init__(self, backend, url, type, body=None, head=None, auth=None):
+    def __init__(self, backend, url, type, body=None, head=None, auth=None, optional=False,
+                 group="nogroup", timeout=None, order=None):
         self.backend = backend
         self.url = url
         self.type = type
         self.body = body
         self.head = head
         self.auth = auth
+        self.optional = optional
+        self.group = group
+        self.timeout = timeout
+        self.order = order
 
     def set(self, endpoint):
         """
@@ -83,9 +132,33 @@ class Endpoint(db.Model):
         self.body = endpoint.body
         self.head = endpoint.head
         self.auth = endpoint.auth
+        self.optional = endpoint.optional
+        self.group = endpoint.group
+        self.timeout = endpoint.timeout
+        self.order = endpoint.order
 
+    def to_json(self):
+        endpoint_dict = {
+            "url": self.url,
+            "request_type": self.type
+        }
+        if self.order:
+            endpoint_dict["order"] = self.order
+        if self.timeout:
+            endpoint_dict["timeout"] = self.timeout
+        if self.group:
+            endpoint_dict["group"] = self.group
+        if self.optional:
+            endpoint_dict["optional"] = self.optional
 
-class Result():
+        body_file = "body_{}".format(self.id)
+        if os.path.isfile(body_file):
+            body_full_path = os.getcwd() + "/" + body_file
+            endpoint_dict["endpoints." + str(self.id)]["body"] = body_full_path
+
+        return endpoint_dict
+
+class Result:
     """
     Result class that contains all information related to an result of an validation.
     """

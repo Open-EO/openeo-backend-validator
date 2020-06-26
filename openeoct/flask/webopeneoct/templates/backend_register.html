@@ -34,8 +34,8 @@
   <dl>
     {{ render_field(form.name) }}
     {{ render_field(form.url) }}
-    {{ render_field(form.openapi) }}
-    {{ render_field(form.authurl) }}
+    {{ render_field(form.version) }}
+      {{ render_field(form.openapi) }}
       {{ render_field(form.username) }}
       {{ render_field(form.password) }}
 
@@ -77,6 +77,12 @@
   <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
     {% endif %}
 </form>
+
+<script>
+ if(!event.willCommit) {
+  this.getField('[field]').value = event.change;
+}
+</script>
 
 </body>
 </html>

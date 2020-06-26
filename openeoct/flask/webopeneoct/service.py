@@ -30,43 +30,9 @@ def create_configfile(be_id):
     """
     backend = Backend.query.filter(Backend.id == be_id).first()
 
-    endpoints = Endpoint.query.filter(Endpoint.backend == be_id).all()
-
     config_path = "config_{}.toml".format(str(backend.id))
 
-    endpoint_list = {}
-    counter = 0
-    for endpoint in endpoints:
-        endpoint_list["endpoints.endpoint"+str(counter)] = {
-            "id": "endpoint"+str(counter),
-            "url": endpoint.url,
-            "request_type": endpoint.type
-        }
-
-
-
-        body_file = "body_{}".format(endpoint.id)
-        if os.path.isfile(body_file):
-            body_full_path = os.getcwd() + "/" + body_file
-            endpoint_list["endpoints.endpoint" + str(counter)]["body"] = body_full_path
-
-        counter += 1
-
-    #openapi_file = "openapi_{}.json".format(backend.openapi)
-
-    if backend.output == "result_None.json":
-        backend.output = "result_{}.json".format(be_id)
-        db.session.commit()
-
-    toml_dict = {
-        "url": backend.url,
-        "openapi": backend.openapi,
-        "username": backend.username,
-        "password": backend.password,
-        "authurl": backend.authurl,
-        "endpoints": endpoint_list,
-        "output": backend.output
-    }
+    toml_dict = backend.to_json()
 
     new_toml_string = toml.dumps(toml_dict)
     print(new_toml_string)
@@ -105,7 +71,7 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
     if not backend:
         return []
 
-    resp = requests.get(backend.url)
+    resp = requests.get(backend.get_url())
     capabilities = resp.json()
 
     endpoints = Endpoint.query.filter(Endpoint.backend == be_id).all()
@@ -139,6 +105,7 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
                         continue
 
                 new_ep = Endpoint(be_id, ep["path"], met)
+                new_ep.id = ep["path"].replace("/", "") + "_id"
 
                 db.session.add(new_ep)
                 db.session.commit()
@@ -222,7 +189,7 @@ def run_pytest_validation(be_id):
     #cmd = ['ls']
     api_version = "0.4.2"
     cmd = "{} --backend {} " \
-          "--html report_{}.html --api-version {}".format(PYTEST_CMD, backend.url, be_id, api_version)
+          "--html report_{}.html --api-version {}".format(PYTEST_CMD, backend.get_url(), be_id, api_version)
     #print(cmd)
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=PYTEST_DIR, shell=True)
     #py.test.cmdline.main(["--backend {}".format(backend.url), "--html report_{}.html".format(be_id)])
