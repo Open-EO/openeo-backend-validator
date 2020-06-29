@@ -1,24 +1,86 @@
 from openeoct.flask.webopeneoct import db
-import requests, os
+import requests
+import os
+
+
+class EndpointVariable(db.Model):
+    """
+    Class that contains variables
+    including a many-to-one relation to the backend instance.
+    """
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String, unique=True, nullable=False)
+    value = db.Column(db.String)
+
+    config = db.Column(db.Integer, db.ForeignKey('config.id'))
+
 
 class Backend(db.Model):
     """
     Backend class that contains all information related to a backend,
-    including a many-to-one relation to the Endpoint instance.
+    including a many-to-one relation to the Config instance.
     """
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, unique=True, nullable=False)
-    url = db.Column(db.String, nullable=False)
-    version = db.Column(db.String, nullable=False)
-    openapi = db.Column(db.String, nullable=False)
+    configs = db.relationship("Config", lazy="dynamic")
+
+    def __init__(self, id, name):
+        self.id = id
+        self.name = name
+
+    def get_output(self):
+        for config in self.configs:
+            if config.output:
+                return config.output
+
+    def set_output(self, output):
+        for config in self.configs:
+            if config.output:
+                config.output = output
+                db.session.commit()
+                return
+
+    def get_openapi(self):
+        for config in self.configs:
+            if config.openapi:
+                return config.openapi
+        return None
+
+    def get_url(self):
+        for config in self.configs:
+            if config.get_url():
+                return config.get_url()
+        return None
+
+    def get_config_ids(self):
+        cfg_ids = []
+        for config in self.configs:
+            cfg_ids.append(config.id)
+
+        return cfg_ids
+
+
+class Config(db.Model):
+    """
+    Config class that contains all information needed for a validation
+    including a many-to-one relation to the Backend instance.
+    """
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String, unique=True, nullable=False)
+    url = db.Column(db.String)
+    version = db.Column(db.String)
+    openapi = db.Column(db.String)
     output = db.Column(db.String)
     authurl = db.Column(db.String)
     username = db.Column(db.String)
     password = db.Column(db.String)
 
-    endpoints = db.relationship("Endpoint", lazy="dynamic")
+    backend = db.Column(db.Integer, db.ForeignKey('backend.id'))
 
-    def __init__(self, id, name, url, openapi, version=None, output=None, authurl=None, username=None, password=None):
+    endpoints = db.relationship("Endpoint", lazy="dynamic")
+    variables = db.relationship("EndpointVariable", lazy="dynamic")
+
+    def __init__(self, id, name, url=None, openapi=None, version=None, output=None, authurl=None, username=None, password=None):
         self.id = id
         self.name = name
         self.url = url
@@ -66,11 +128,15 @@ class Backend(db.Model):
         for endpoint in self.endpoints:
             endpoint_list["endpoints." + str(endpoint.id)] = endpoint.to_json()
 
+        variables_list = {}
+        for variable in self.variables:
+            variables_list[variable.name] = variable.value
+
         if self.output == "result_None.json":
             self.output = "result_{}.json".format(self.id)
             db.session.commit()
 
-        toml_dict = {
+        json_dict = {
             "url": self.url,
             "openapi": self.openapi,
             "username": self.username,
@@ -78,12 +144,15 @@ class Backend(db.Model):
             "endpoints": endpoint_list,
             "output": self.output
         }
-        if self.version:
-            toml_dict["backendversion"] = self.version
-        if self.authurl:
-            toml_dict["authurl"] = self.authurl
 
-        return toml_dict
+        if variables_list:
+            json_dict["variables"] = variables_list
+        if self.version:
+            json_dict["backendversion"] = self.version
+        if self.authurl:
+            json_dict["authurl"] = self.authurl
+
+        return json_dict
 
 
 class Endpoint(db.Model):
@@ -102,11 +171,11 @@ class Endpoint(db.Model):
     timeout = db.Column(db.Integer)
     order = db.Column(db.Integer)
 
-    backend = db.Column(db.Integer, db.ForeignKey('backend.id'))
+    config = db.Column(db.Integer, db.ForeignKey('config.id'))
 
-    def __init__(self, backend, url, type, body=None, head=None, auth=None, optional=False,
+    def __init__(self, config, url, type, body=None, head=None, auth=None, optional=False,
                  group="nogroup", timeout=None, order=None):
-        self.backend = backend
+        self.config = config
         self.url = url
         self.type = type
         self.body = body
@@ -157,6 +226,7 @@ class Endpoint(db.Model):
             endpoint_dict["endpoints." + str(self.id)]["body"] = body_full_path
 
         return endpoint_dict
+
 
 class Result:
     """

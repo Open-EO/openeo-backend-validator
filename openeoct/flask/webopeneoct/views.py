@@ -2,9 +2,10 @@
 from openeoct.flask.webopeneoct import app, db
 from flask import request, flash, redirect, url_for, render_template, send_file
 from .forms import BackendForm, EndpointForm
-from .models import Backend, Endpoint
-from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints
+from .models import Backend, Endpoint, Config, EndpointVariable
+from .service import run_validation, create_configfiles, run_pytest_validation, gen_endpoints, create_configfile
 import os
+
 
 @app.route('/')
 def home():
@@ -14,6 +15,47 @@ def home():
     backends = Backend.query.all()
 
     return render_template('home.html', backends=backends)
+
+
+# @app.route('/config/edit/<co_id>', methods=['GET', 'POST'])
+# def config_edit(co_id):
+#     """
+#     Edit or register a backend at the database. If be_id is not None it will edit the existing one,
+#     otherwise it creates a new backend instance.
+#
+#     Parameters
+#     ----------
+#     co_id : int
+#         ID of backend
+#     """
+#     form = BackendForm(request.form)
+#
+#     if request.method == 'POST' and form.validate():
+#
+#         config = form.get_config()
+#
+#         orig_backend = Config.query.filter(Config.id == co_id).first()
+#
+#         if not orig_backend:
+#             db.session.add(config)
+#         else:
+#             orig_backend.set(config)
+#             db.session.commit()
+#
+#         create_configfile(co_id)
+#
+#         return redirect(request.referrer)
+#     else:
+#         if co_id:
+#             config = Config.query.filter(Config.id == co_id).first()
+#             if config:
+#                 form.set_config(config)
+#
+#     endpoints = None
+#     if co_id:
+#         endpoints = Endpoint.query.filter(Endpoint.config == co_id).all()
+#
+#     return render_template('config_edit.html', form=form, endpoints=endpoints)
 
 
 @app.route('/backend/edit/<be_id>', methods=['GET', 'POST'])
@@ -41,7 +83,7 @@ def backend_edit(be_id):
             orig_backend.set(backend)
             db.session.commit()
 
-        create_configfile(be_id)
+        create_configfiles(be_id)
 
         return redirect(request.referrer)
     else:
@@ -50,11 +92,19 @@ def backend_edit(be_id):
             if backend:
                 form.set_backend(backend)
 
+    configs = None
+    if be_id:
+        configs = Config.query.filter(Config.backend == be_id).all()
+
     endpoints = None
     if be_id:
         endpoints = Endpoint.query.filter(Endpoint.backend == be_id).all()
 
-    return render_template('backend_edit.html', form=form, endpoints=endpoints)
+    variables = None
+    if be_id:
+        variables = EndpointVariable.query.filter(Endpoint.backend == be_id).all()
+
+    return render_template('backend_edit.html', form=form, endpoints=endpoints, variables=variables, configs=configs)
 
 
 @app.route('/backend/register/', methods=['GET', 'POST'])
@@ -129,7 +179,7 @@ def endpoint_register(ep_id=None):
             f.write(form.body.data)
             f.close()
 
-        create_configfile(endpoint.backend)
+        create_configfiles(endpoint.backend)
 
         return redirect(request.referrer)
     else:
@@ -163,7 +213,7 @@ def backend_add_endpoint(be_id=None):
             f.write(form.body.data)
             f.close()
 
-        create_configfile(be_id)
+        create_configfiles(be_id)
 
         return redirect(request.referrer)
     else:
@@ -188,7 +238,7 @@ def backend_del_endpoint(ep_id=None):
         be_id = endpoint.backend
         db.session.delete(endpoint)
         db.session.commit()
-        create_configfile(be_id)
+        create_configfiles(be_id)
 
     return redirect(request.referrer)
 

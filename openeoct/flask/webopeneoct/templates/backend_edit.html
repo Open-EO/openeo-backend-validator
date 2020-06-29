@@ -41,7 +41,7 @@
 
       <dt><label>Endpoints</label>
           {% if endpoints %}
-            <table class="table table-condensed" id="backendlist">
+            <table class="table table-condensed" id="endpointlist">
         <thead>
           <tr>
             <th>URL</th>
@@ -69,6 +69,63 @@
         <dd><button type="button" onclick="window.location.href='{{ url_for('backend_gen_get_endpoints', be_id=form.id.data) }}';">Generate GET Endpoints <span class="glyphicon glyphicon-plus"></span></button>
         <dd><button type="button" onclick="window.location.href='{{ url_for('backend_gen_all_endpoints', be_id=form.id.data) }}';">Generate ALL Endpoints <span class="glyphicon glyphicon-plus"></span></button>
       {% endif %}
+
+    <dt><label>Variables</label>
+          {% if variables %}
+            <table class="table table-condensed" id="variableslist">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Value</th>
+              <th>Edit</th>
+              <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+
+                {% for variable in variables %}
+                <tr>
+                    <td>{{ variable.name }}</td>
+                    <td>{{ variable.value }}</td>
+                    <td><button type="button" onclick="window.location.href='{{ url_for( 'variable_register', var_id=variable.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
+                    <td><button type="button" onclick="window.location.href='{{ url_for('backend_del_variable', var_id=variable.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
+                </tr>
+                {% endfor %}
+
+        </tbody>
+</table>
+      {% endif %}
+      {% if form.id.data %}
+        <dd><button type="button" onclick="window.location.href='{{ url_for('backend_add_variable', be_id=form.id.data) }}';">Add Variable <span class="glyphicon glyphicon-plus"></span></button>
+      {% endif %}
+
+          <dt><label>Configuration Files</label>
+          {% if configs %}
+            <table class="table table-condensed" id="configlist">
+        <thead>
+          <tr>
+            <th>File</th>
+              <th>Edit</th>
+              <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+
+                {% for config in configs %}
+                <tr>
+                    <td>{{ config.name }}</td>
+                    <td><button type="button" onclick="window.location.href='{{ url_for( 'config_register', var_id=variable.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
+                    <td><button type="button" onclick="window.location.href='{{ url_for('backend_del_config', var_id=variable.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
+                </tr>
+                {% endfor %}
+
+        </tbody>
+</table>
+      {% endif %}
+      {% if form.id.data %}
+        <dd><button type="button" onclick="window.location.href='{{ url_for('backend_add_config', be_id=form.id.data) }}';">Add Config <span class="glyphicon glyphicon-plus"></span></button>
+      {% endif %}
+
   </dl>
 
   {% if form.id.data %}

@@ -1,8 +1,39 @@
 from wtforms import Form, BooleanField, StringField, PasswordField, validators, SelectField, TextAreaField, IntegerField
 from wtforms.validators import DataRequired
 from wtforms.widgets import PasswordInput
-from .models import Backend, Endpoint
+from .models import Backend, Endpoint, Config
 import os
+
+
+# class BackendForm(Form):
+#     """
+#     Form for the backend entity. Used to edit a backend instance.
+#     """
+#     id = IntegerField('Id')
+#     name = StringField('Name')
+#
+#     def set_backend(self, backend):
+#         """
+#         Sets the form values to the values of an backend instance
+#
+#         Parameters
+#         ----------
+#         backend : Backend
+#             Source backend instance
+#         """
+#         self.name.data = backend.name
+#         self.id.data = backend.id
+#
+#     def get_config(self):
+#         """
+#            Get config instance with the data of the form instance.
+#
+#            Return
+#            ----------
+#            backend : Backend
+#                Backend instance with values of the form.
+#         """
+#         return Backend(self.id.data, self.name.data)
 
 
 class BackendForm(Form):
@@ -44,17 +75,23 @@ class BackendForm(Form):
 
         Parameters
         ----------
-        backend : Backend
+        config : Backend
             Source backend instance
         """
         self.name.data = backend.name
-        self.url.data = backend.url
-        self.version.data = backend.version
-        self.password.data = backend.password
-        self.username.data = backend.username
-        # self.output.data = backend.output
-        self.openapi.data = backend.openapi
         self.id.data = backend.id
+        for config in backend.configs:
+            if config.url:
+                self.url.data = config.url
+            if config.version:
+                self.version.data = config.version
+            if config.password:
+                self.password.data = config.password
+            if config.username:
+                self.username.data = config.username
+            # self.output.data = backend.output
+            if config.openapi:
+                self.openapi.data = config.openapi
 
     def get_backend(self):
         """
@@ -65,9 +102,8 @@ class BackendForm(Form):
            backend : Backend
                Backend instance with values of the form.
         """
-        default_output = "result_{}.json".format(self.id.data)
-        return Backend(self.id.data, self.name.data, self.url.data, self.openapi.data, output=default_output,
-                version=self.version.data, username=self.username.data, password=self.password.data)
+        # default_output = "result_{}.json".format(self.id.data)
+        return Backend(self.id.data, self.name.data)
 
 
 class EndpointForm(Form):
@@ -169,5 +205,6 @@ class EndpointForm(Form):
            endpoint : Endpoint
                Endpoint instance with values of the form.
         """
-        return Endpoint(self.backend.data, self.url.data, self.type.data, optional=self.optional.data, group=self.group.data, timeout=self.timeout.data, order=self.order.data) #body=self.body.data, head=self.head.data,
-                #auth=self.auth.data)
+        return Endpoint(self.backend.data, self.url.data, self.type.data, optional=self.optional.data,
+                        group=self.group.data, timeout=self.timeout.data, order=self.order.data)
+        #body=self.body.data, head=self.head.data, #auth=self.auth.data)

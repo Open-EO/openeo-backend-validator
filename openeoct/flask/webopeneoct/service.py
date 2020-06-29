@@ -1,4 +1,4 @@
-from .models import Backend, Endpoint, Result
+from .models import Backend, Endpoint, Result, Config
 from openeoct.flask.webopeneoct import db
 import json
 import toml
@@ -13,7 +13,23 @@ PYTEST_DIR = "../../../openeo_compliance_tests/"
 PYTEST_CMD = "/home/bgoesswe/.pyenv/versions/miniconda3-latest/envs/openeoct/bin/pytest"
 
 
-def create_configfile(be_id):
+def create_configfile(co_id):
+
+    config = Config.query.filter(Config.id == co_id).first()
+
+    config_path = "config_{}.toml".format(str(co_id))
+
+    toml_dict = config.to_json()
+
+    new_toml_string = toml.dumps(toml_dict)
+    print(config_path)
+    with open(config_path, "w") as text_file:
+        text_file.write(new_toml_string)
+
+    return config_path
+
+
+def create_configfiles(be_id):
     """
     Creates the toml config file for the openeoct tool, according to the config stored in the database.
 
@@ -30,16 +46,12 @@ def create_configfile(be_id):
     """
     backend = Backend.query.filter(Backend.id == be_id).first()
 
-    config_path = "config_{}.toml".format(str(backend.id))
+    config_paths = []
 
-    toml_dict = backend.to_json()
+    for config in backend.configs:
+        config_paths.append(create_configfiles(config.id))
 
-    new_toml_string = toml.dumps(toml_dict)
-    print(new_toml_string)
-    with open(config_path, "w") as text_file:
-        text_file.write(new_toml_string)
-
-    return config_path
+    return config_paths
 
 
 def common_member(a, b):
@@ -74,9 +86,16 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
     resp = requests.get(backend.get_url())
     capabilities = resp.json()
 
-    endpoints = Endpoint.query.filter(Endpoint.backend == be_id).all()
-    url_dict = {}
+    endpoints = []
 
+    cfg_id = None
+
+    for config in backend.configs:
+
+        endpoints += Endpoint.query.filter(Endpoint.config == config.id).all()
+        cfg_id = config.id
+
+    url_dict = {}
 
     # Existing endpoint urls of the backend
     for ep in endpoints:
@@ -104,7 +123,7 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
                     if met in url_dict[ep["path"]]:
                         continue
 
-                new_ep = Endpoint(be_id, ep["path"], met)
+                new_ep = Endpoint(cfg_id, ep["path"], met)
                 new_ep.id = ep["path"].replace("/", "") + "_id"
 
                 db.session.add(new_ep)
@@ -112,7 +131,7 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
                 ep_list.append(new_ep)
                 print(ep)
 
-    create_configfile(be_id)
+    create_configfiles(be_id)
     return ep_list
 
 
@@ -134,14 +153,14 @@ def read_result(be_id):
     time.sleep(1)
     backend = Backend.query.filter(Backend.id == be_id).first()
 
-    if backend.output == "result_None.json":
-        backend.output = "result_{}.json".format(backend.id)
-        db.session.commit()
+    if backend.get_output() == "result_None.json":
+        backend.set_output("result_{}.json".format(backend.id))
+        # db.session.commit()
 
-    result_path = "{}/{}".format(WORKING_DIR, backend.output)
+    result_path = "{}/{}".format(WORKING_DIR, backend.get_output())
 
     if os.path.isfile(result_path):
-        result_file = open("{}/{}".format(WORKING_DIR, backend.output), "r")
+        result_file = open("{}/{}".format(WORKING_DIR, backend.get_output()), "r")
 
         result = json.loads(result_file.read())
 
@@ -165,11 +184,14 @@ def run_validation(be_id):
     """
     # config_path = create_configfile(be_id)
 
-    config_path = "config_{}.toml".format(str(be_id))
+    backend = Backend.query.filter(Backend.id == be_id).first()
 
-    config_path = os.getcwd() + "/" + config_path
+    cmd = ['./openeoct', 'config']
 
-    cmd = ['./openeoct', 'config', config_path]
+    for config in backend.configs:
+        config_path = "config_{}.toml".format(str(config.id))
+        config_path = os.getcwd() + "/" + config_path
+        cmd.append(config_path)
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=WORKING_DIR)
 
