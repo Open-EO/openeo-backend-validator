@@ -148,6 +148,7 @@ class EndpointForm(Form):
     group = StringField('Group')
     timeout = IntegerField('Timeout')
     order = IntegerField('Order')
+
     def __init__(self, *args, **kwargs):
         """
             Constructor of the EndpointForm. Creates the backend list according to the entities of the database.

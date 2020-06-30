@@ -13,7 +13,7 @@ PYTEST_DIR = "../../../openeo_compliance_tests/"
 PYTEST_CMD = "/home/bgoesswe/.pyenv/versions/miniconda3-latest/envs/openeoct/bin/pytest"
 
 
-def create_configfile(be_id):
+def create_configfile(be_id, plainpwd=True):
     """
     Creates the toml config file for the openeoct tool, according to the config stored in the database.
 
@@ -34,12 +34,23 @@ def create_configfile(be_id):
 
     toml_dict = backend.to_json()
 
+    if not plainpwd:
+        if "password" in toml_dict:
+            toml_dict["password"] = "CENSORED"
+
     new_toml_string = toml.dumps(toml_dict)
     print(new_toml_string)
     with open(config_path, "w") as text_file:
         text_file.write(new_toml_string)
 
     return config_path
+
+
+def read_configfile(file_path):
+    with open(file_path) as file:
+        config_dict = toml.loads(file.read())
+
+    return config_dict
 
 
 def common_member(a, b):
@@ -112,6 +123,19 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
 
     create_configfile(be_id)
     return ep_list
+
+
+def configs_to_backend(file_paths, name):
+
+    backend = Backend(None, name=name, url="", openapi="")
+
+    db.session.add(backend)
+
+    for file in file_paths:
+        config_json = read_configfile(file)
+        backend.append_config(config_json)
+
+    return backend
 
 
 def read_result(be_id):

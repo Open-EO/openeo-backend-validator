@@ -3,8 +3,9 @@ from openeoct.flask.webopeneoct import app, db
 from flask import request, flash, redirect, url_for, render_template, send_file
 from .forms import BackendForm, EndpointForm, VariableForm
 from .models import Backend, Endpoint, Variable
-from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints
+from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints, configs_to_backend
 import os
+from werkzeug import secure_filename
 
 
 @app.route('/')
@@ -41,7 +42,7 @@ def backend_edit(be_id):
             orig_backend.set(backend)
             db.session.commit()
 
-        create_configfile(be_id)
+        #create_configfile(be_id)
 
         return redirect(request.referrer)
     else:
@@ -79,6 +80,31 @@ def backend_register():
         return redirect(url_for('home'))
 
     return render_template('backend_register.html', form=form, endpoints=None)
+
+
+@app.route('/backend/registercfg/', methods=['GET', 'POST'])
+def backend_register_cfg():
+
+    if request.method == 'POST':
+
+        name = ""
+        if "name" in request.form:
+            name = request.form["name"]
+        file_list = request.files.getlist("file")
+
+        file_paths = []
+
+        for f in file_list:
+            f.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
+            file_paths.append(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
+
+        configs_to_backend(file_paths=file_paths, name=name)
+
+        db.session.commit()
+
+        return redirect(url_for('home'))
+
+    return render_template('backend_config_upload.html')
 
 
 @app.route('/backend/gen_get_endpoints/<be_id>', methods=['GET'])
@@ -133,7 +159,7 @@ def endpoint_register(ep_id=None):
             f.write(form.body.data)
             f.close()
 
-        create_configfile(endpoint.backend)
+        #create_configfile(endpoint.backend)
 
         return redirect(request.referrer)
     else:
@@ -167,7 +193,7 @@ def backend_add_endpoint(be_id=None):
             f.write(form.body.data)
             f.close()
 
-        create_configfile(be_id)
+        #create_configfile(be_id)
 
         return redirect(request.referrer)
     else:
@@ -194,7 +220,7 @@ def backend_add_variable(be_id=None):
         variable = form.get_variable()
         db.session.add(variable)
 
-        create_configfile(be_id)
+        #create_configfile(be_id)
 
         return redirect(request.referrer)
     else:
@@ -216,10 +242,10 @@ def backend_del_endpoint(ep_id=None):
     if ep_id:
 
         endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
-        be_id = endpoint.backend
+        #be_id = endpoint.backend
         db.session.delete(endpoint)
         db.session.commit()
-        create_configfile(be_id)
+        #create_configfile(be_id)
 
     return redirect(request.referrer)
 
@@ -229,10 +255,10 @@ def backend_del_variable(va_id=None):
 
     if va_id:
         variable = Variable.query.filter(Variable.id == va_id).first()
-        be_id = variable.backend
+        #be_id = variable.backend
         db.session.delete(variable)
         db.session.commit()
-        create_configfile(be_id)
+        #create_configfile(be_id)
 
     return redirect(request.referrer)
 
@@ -247,6 +273,7 @@ def backend_validate(be_id):
     be_id : int
         ID of backend
     """
+    create_configfile(be_id=be_id)
     backend = Backend.query.filter(Backend.id == be_id).first()
 
     form = BackendForm(request.form)
@@ -272,11 +299,9 @@ def backend_download(be_id):
     be_id : int
         ID of backend
     """
+    create_configfile(be_id=be_id, plainpwd=False)
+
     backend = Backend.query.filter(Backend.id == be_id).first()
-
-    #form = BackendForm(request.form)
-
-    #form.set_backend(backend)
 
     if backend.output == "result_None.json":
         backend.output = "result_{}.json".format(backend.id)

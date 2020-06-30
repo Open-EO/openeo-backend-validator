@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+
+  <title>Register Backend</title>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+</head>
+<body>
+
+{% from "_formhelpers.html" import render_field %}
+<form method="post", enctype = "multipart/form-data">
+  <dl>
+    <dt><label for="name">Name</label>
+      <dd><input id="name" name="name" type="text" value=""> </dd>
+      <dt><label>Configfiles</label>
+      <dd><input type = "file" name = "file" accept=".json, .toml" multiple/> </dd>
+  </dl>
+
+  <p><input type=submit value=Create>
+
+  <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+</form>
+
+</body>
+</html>

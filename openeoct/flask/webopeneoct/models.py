@@ -64,6 +64,53 @@ class Backend(db.Model):
 
         return self.url
 
+    def append_config(self, conf_json):
+
+        if "url" in conf_json:
+            self.url = conf_json["url"]
+        if "openapi" in conf_json:
+            self.openapi = conf_json["openapi"]
+        if "username" in conf_json:
+            self.username = conf_json["username"]
+        if "backendversion" in conf_json:
+            self.version = conf_json["backendversion"]
+        if "authurl" in conf_json:
+            self.authurl = conf_json["authurl"]
+        if "variables" in conf_json:
+            if not self.variables:
+                self.variables = []
+            for nam, val in conf_json["variables"].items():
+                variable = Variable(name=nam, value=val, backend=self.id)
+                self.append_variable(variable)
+        if "endpoints" in conf_json:
+            if not self.endpoints:
+                self.endpoints = []
+            for nam, val in conf_json["endpoints"].items():
+                endpoint = Endpoint(backend=self.id, url=None, type=None, id=nam)
+                endpoint.from_json(val)
+                self.append_endpoint(endpoint)
+                #self.endpoints.append(endpoint) #TODO: Check if endpoint with same id already is there...
+
+    def append_variable(self, variable):
+        for existing_var in self.variables:
+            if existing_var.name == variable.name:
+                existing_var.value = variable.value
+                db.session.commit()
+                return
+        variable.backend = self.id
+        self.variables.append(variable)
+        db.session.add(variable)
+
+    def append_endpoint(self, endpoint):
+        for existing_ep in self.endpoints:
+            if existing_ep.id == endpoint.id:
+                existing_ep.set(endpoint)
+                db.session.commit()
+                return
+        endpoint.backend = self.id
+        self.endpoints.append(endpoint)
+        db.session.add(endpoint)
+
     def to_json(self):
         endpoint_list = {}
         for endpoint in self.endpoints:
@@ -132,9 +179,10 @@ class Endpoint(db.Model):
 
     backend = db.Column(db.Integer, db.ForeignKey('backend.id'))
 
-    def __init__(self, backend, url, type, body=None, head=None, auth=None, optional=False,
+    def __init__(self, backend, url, type, id=None, body=None, head=None, auth=None, optional=False,
                  group="nogroup", timeout=None, order=None):
         self.backend = backend
+        self.id = id
         self.url = url
         self.type = type
         self.body = body
@@ -162,6 +210,7 @@ class Endpoint(db.Model):
         self.group = endpoint.group
         self.timeout = endpoint.timeout
         self.order = endpoint.order
+        self.id = endpoint.id
 
     def to_json(self):
         endpoint_dict = {
@@ -183,6 +232,24 @@ class Endpoint(db.Model):
             endpoint_dict["endpoints." + str(self.id)]["body"] = body_full_path
 
         return endpoint_dict
+
+    def from_json(self, ep_json):
+        if "id" in ep_json:
+            self.id = ep_json["id"]
+        if "url" in ep_json:
+            self.url = ep_json["url"]
+        if "request_type" in ep_json:
+            self.type = ep_json["request_type"]
+        if "order" in ep_json:
+            self.order = ep_json["order"]
+        if "timeout" in ep_json:
+            self.timeout = ep_json["timeout"]
+        if "group" in ep_json:
+            self.group = ep_json["group"]
+        if "optional" in ep_json:
+            self.optional = ep_json["optional"]
+        if "body" in ep_json:
+            self.body = ep_json["body"]
 
 
 class Result:
