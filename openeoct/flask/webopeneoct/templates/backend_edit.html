@@ -39,6 +39,29 @@
       {{ render_field(form.username) }}
       {{ render_field(form.password) }}
 
+            <dt><label>Variables</label>
+
+            <table class="table table-condensed" id="variablelist">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Value</th>
+              <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+                {% for variable in variables %}
+                <tr>
+                    <td><div>{{ variable.name }}</div></td>
+                    <td><div>{{ variable.value }}</div></td>
+                    <td><button type="button" onclick="window.location.href='{{ url_for('backend_del_variable', va_id=variable.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
+                </tr>
+                {% endfor %}
+
+        </tbody>
+</table>
+<dd><button type="button" onclick="window.location.href='{{ url_for('backend_add_variable', be_id=form.id.data) }}';">Add Variable <span class="glyphicon glyphicon-plus"></span></button>
+
       <dt><label>Endpoints</label>
           {% if endpoints %}
             <table class="table table-condensed" id="backendlist">
@@ -69,6 +92,8 @@
         <dd><button type="button" onclick="window.location.href='{{ url_for('backend_gen_get_endpoints', be_id=form.id.data) }}';">Generate GET Endpoints <span class="glyphicon glyphicon-plus"></span></button>
         <dd><button type="button" onclick="window.location.href='{{ url_for('backend_gen_all_endpoints', be_id=form.id.data) }}';">Generate ALL Endpoints <span class="glyphicon glyphicon-plus"></span></button>
       {% endif %}
+
+
   </dl>
 
   {% if form.id.data %}

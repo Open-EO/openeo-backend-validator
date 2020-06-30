@@ -1,8 +1,48 @@
-from wtforms import Form, BooleanField, StringField, PasswordField, validators, SelectField, TextAreaField, IntegerField
+from wtforms import Form, BooleanField, StringField, PasswordField, validators, SelectField, \
+                    TextAreaField, IntegerField, FieldList, FormField
 from wtforms.validators import DataRequired
 from wtforms.widgets import PasswordInput
-from .models import Backend, Endpoint
+from .models import Backend, Endpoint, Variable
 import os
+
+
+class VariableForm(Form):
+    """
+    Form for the endpoint entity. Used to edit an endpoint instance.
+    """
+    id = IntegerField('Id')
+    name = StringField('Name')
+    value = StringField('Value')
+    backend = SelectField('Backend', coerce=int,
+                               validators=[
+                                   DataRequired('Please select a backend')])
+
+    def __init__(self, *args, **kwargs):
+        """
+            Constructor of the EndpointForm. Creates the backend list according to the entities of the database.
+
+        """
+        super(VariableForm, self).__init__(*args, **kwargs)
+        backends = Backend.query.with_entities(
+            Backend.id, Backend.name). \
+            order_by(Backend.name).all()
+        self.backend.choices = [
+            (backend.id, backend.name)
+            for backend in backends
+        ]
+
+    def set_variable(self, variable):
+
+        self.id.data = variable.id
+        self.name.data = variable.name
+        self.value.data = variable.value
+        self.backend.data = variable.backend
+
+    def get_variable(self):
+        variable = Variable(name=self.name.data, value=self.value.data, backend=self.backend.data)
+        if self.id.data:
+            variable.id = self.id.data
+        return variable
 
 
 class BackendForm(Form):
@@ -33,9 +73,12 @@ class BackendForm(Form):
     url = StringField('URL')
     openapi = StringField('OpenAPI-URL') #SelectField('Backend', choices=[('0_3_1', '0.3.1'), ('0_4_0', '0.4.0'), ('0_4_1', '0.4.1')])
     output = StringField('Output')
+    version = StringField('Backend-Version')
     authurl = StringField('Authentication URL')
     username = StringField('Authentication Username')
     password = StringField('Authentication Password', widget=PasswordInput(hide_value=False))
+
+    # variables = FieldList(FormField(VariableForm))
 
     def set_backend(self, backend):
         """
@@ -48,7 +91,8 @@ class BackendForm(Form):
         """
         self.name.data = backend.name
         self.url.data = backend.url
-        self.authurl.data = backend.authurl
+        # self.authurl.data = backend.authurl
+        self.version.data = backend.version
         self.password.data = backend.password
         self.username.data = backend.username
         self.output.data = backend.output
@@ -66,7 +110,7 @@ class BackendForm(Form):
         """
         default_output = "result_{}.json".format(self.id.data)
         return Backend(self.id.data, self.name.data, self.url.data, self.openapi.data, output=default_output,
-                authurl=self.authurl.data, username=self.username.data, password=self.password.data)
+                       username=self.username.data, version=self.version.data, password=self.password.data)
 
 
 class EndpointForm(Form):
@@ -93,12 +137,12 @@ class EndpointForm(Form):
     id = IntegerField('Id')
     backend = SelectField('Backend', coerce=int,
                                validators=[
-                                   DataRequired('Please select an organisation')])
+                                   DataRequired('Please select a backend')])
     url = StringField('URL')
     type = SelectField('Type', choices=[('GET', 'GET'), ('POST', 'POST'), ('PATCH', 'PATCH'), ('PUT', 'PUT'),
                                         ('DELETE', 'DELETE')],
                                validators=[
-                                   DataRequired('Please select an organisation')])
+                                   DataRequired('Please select a http method  / type')])
     body = TextAreaField('Body', render_kw={'class': 'form-control', 'rows': 20})
 #    head = TextAreaField('Head')
 #    auth = SelectField('Authentication', choices=[('Auto', 'auto'), ('Yes', 'yes'), ('No', 'no')])

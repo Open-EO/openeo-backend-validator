@@ -1,10 +1,11 @@
 
 from openeoct.flask.webopeneoct import app, db
 from flask import request, flash, redirect, url_for, render_template, send_file
-from .forms import BackendForm, EndpointForm
-from .models import Backend, Endpoint
+from .forms import BackendForm, EndpointForm, VariableForm
+from .models import Backend, Endpoint, Variable
 from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints
 import os
+
 
 @app.route('/')
 def home():
@@ -32,7 +33,6 @@ def backend_edit(be_id):
     if request.method == 'POST' and form.validate():
 
         backend = form.get_backend()
-
         orig_backend = Backend.query.filter(Backend.id == be_id).first()
 
         if not orig_backend:
@@ -54,7 +54,11 @@ def backend_edit(be_id):
     if be_id:
         endpoints = Endpoint.query.filter(Endpoint.backend == be_id).all()
 
-    return render_template('backend_edit.html', form=form, endpoints=endpoints)
+    variables = None
+    if be_id:
+        variables = Variable.query.filter(Variable.backend == be_id).all()
+
+    return render_template('backend_edit.html', form=form, endpoints=endpoints, variables=variables)
 
 
 @app.route('/backend/register/', methods=['GET', 'POST'])
@@ -172,6 +176,33 @@ def backend_add_endpoint(be_id=None):
     return render_template('endpoint_register.html', form=form)
 
 
+@app.route('/variable/add/<be_id>', methods=['GET', 'POST'])
+def backend_add_variable(be_id=None):
+    """
+    Add an endpoint to a backend at the database.
+
+    Parameters
+    ----------
+    be_id : int
+        ID of backend
+    """
+
+    form = VariableForm(request.form)
+
+    if request.method == 'POST' and form.validate():
+
+        variable = form.get_variable()
+        db.session.add(variable)
+
+        create_configfile(be_id)
+
+        return redirect(request.referrer)
+    else:
+        form.backend.data = be_id
+
+    return render_template('variable_register.html', form=form)
+
+
 @app.route('/endpoint/del/<ep_id>', methods=['GET', 'POST'])
 def backend_del_endpoint(ep_id=None):
     """
@@ -187,6 +218,19 @@ def backend_del_endpoint(ep_id=None):
         endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
         be_id = endpoint.backend
         db.session.delete(endpoint)
+        db.session.commit()
+        create_configfile(be_id)
+
+    return redirect(request.referrer)
+
+
+@app.route('/variable/del/<va_id>', methods=['GET', 'POST'])
+def backend_del_variable(va_id=None):
+
+    if va_id:
+        variable = Variable.query.filter(Variable.id == va_id).first()
+        be_id = variable.backend
+        db.session.delete(variable)
         db.session.commit()
         create_configfile(be_id)
 
@@ -214,7 +258,7 @@ def backend_validate(be_id):
         db.session.commit()
 
     results = run_validation(be_id)
-    #results = run_pytest_validation(be_id)
+
     return render_template('backend_validate.html', form=form, results=results)
 
 
@@ -230,9 +274,9 @@ def backend_download(be_id):
     """
     backend = Backend.query.filter(Backend.id == be_id).first()
 
-    form = BackendForm(request.form)
+    #form = BackendForm(request.form)
 
-    form.set_backend(backend)
+    #form.set_backend(backend)
 
     if backend.output == "result_None.json":
         backend.output = "result_{}.json".format(backend.id)

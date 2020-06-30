@@ -15,4 +15,4 @@ db = SQLAlchemy(app)
 from openeoct.flask.webopeneoct import views, models
 
 # needs to be executed in the first time, to create the sqlite database
-# db.create_all()
+db.create_all()

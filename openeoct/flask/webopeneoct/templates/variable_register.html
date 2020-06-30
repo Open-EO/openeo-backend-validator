@@ -4,9 +4,9 @@
  <meta charset="UTF-8">
 
   {% if form.id %}
-  <title>Edit Backend</title>
+  <title>Update Variable</title>
   {% else %}
-  <title>Register Backend</title>
+  <title>Register Variable</title>
   {% endif %}
 
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
@@ -33,23 +33,13 @@
 <form method=post>
   <dl>
     {{ render_field(form.name) }}
-    {{ render_field(form.url) }}
-      {{ render_field(form.version) }}
-    {{ render_field(form.openapi) }}
-  <!--  {{ render_field(form.authurl) }} -->
-      {{ render_field(form.username) }}
-      {{ render_field(form.password) }}
+    {{ render_field(form.value) }}
+          {{ render_field(form.backend) }}
   </dl>
+  <p><input type=submit value=Submit>
 
-  {% if form.id.data %}
-  <p><input type=submit value=Update>
-  {% else %}
-  <p><input type=submit value=Register>
-  {% endif %}
   <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
-    {% if form.id.data %}
-  <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
-    {% endif %}
+  <button type="button" onclick="window.location.href='{{ url_for('backend_edit', be_id=form.backend.data) }}';">Backend</button>
 </form>
 
 </body>
