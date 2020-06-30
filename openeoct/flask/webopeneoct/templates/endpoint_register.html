@@ -32,10 +32,15 @@
 {% from "_formhelpers.html" import render_field %}
 <form method=post>
   <dl>
+      {{ render_field(form.id) }}
     {{ render_field(form.backend) }}
     {{ render_field(form.url) }}
     {{ render_field(form.type) }}
       {{ render_field(form.body) }}
+      {{ render_field(form.optional) }}
+      {{ render_field(form.group) }}
+      {{ render_field(form.timeout) }}
+      {{ render_field(form.order) }}
   </dl>
   <p><input type=submit value=Submit>
 

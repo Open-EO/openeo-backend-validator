@@ -134,7 +134,7 @@ class EndpointForm(Form):
     auth : SelectField
         Set if authentication has to be used or not for the endpoint ('auto' to set it according to the specification)
     """
-    id = IntegerField('Id')
+    id = StringField('Id')
     backend = SelectField('Backend', coerce=int,
                                validators=[
                                    DataRequired('Please select a backend')])
@@ -144,9 +144,10 @@ class EndpointForm(Form):
                                validators=[
                                    DataRequired('Please select a http method  / type')])
     body = TextAreaField('Body', render_kw={'class': 'form-control', 'rows': 20})
-#    head = TextAreaField('Head')
-#    auth = SelectField('Authentication', choices=[('Auto', 'auto'), ('Yes', 'yes'), ('No', 'no')])
-
+    optional = BooleanField("Optional")#SelectField('Optional', choices=[(False, "no"), (True, 'yes')])
+    group = StringField('Group')
+    timeout = IntegerField('Timeout')
+    order = IntegerField('Order')
     def __init__(self, *args, **kwargs):
         """
             Constructor of the EndpointForm. Creates the backend list according to the entities of the database.
@@ -173,9 +174,25 @@ class EndpointForm(Form):
         self.backend.data = endpoint.backend
         self.url.data = endpoint.url
         self.type.data = endpoint.type
-#        self.body.data = endpoint.body
-#        self.head.data = endpoint.head
-#        self.auth.data = endpoint.auth
+        # self.body.data = endpoint.body
+        self.optional.data = endpoint.optional
+        #if endpoint.optional:
+        #    self.optional.data = (True, "yes")
+        #else:
+        #    self.optional.data = (False, "no")
+        if not endpoint.group:
+            self.group.data = "nogroup"
+        else:
+            self.group.data = endpoint.group
+
+        if not endpoint.timeout:
+            self.timeout.data = 0
+        else:
+            self.timeout.data = endpoint.timeout
+        if not endpoint.order:
+            self.order.data = 0
+        else:
+            self.order.data = endpoint.order
         self.id.data = endpoint.id
 
         body_file = "body_{}".format(self.id.data)
@@ -193,5 +210,5 @@ class EndpointForm(Form):
            endpoint : Endpoint
                Endpoint instance with values of the form.
         """
-        return Endpoint(self.backend.data, self.url.data, self.type.data) #body=self.body.data, head=self.head.data,
-                #auth=self.auth.data)
+        return Endpoint(self.backend.data, self.url.data, self.type.data, optional=self.optional.data,
+                        group=self.group.data, timeout=self.timeout.data, order=self.order.data)
