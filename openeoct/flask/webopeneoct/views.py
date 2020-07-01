@@ -3,7 +3,8 @@ from openeoct.flask.webopeneoct import app, db
 from flask import request, flash, redirect, url_for, render_template, send_file
 from .forms import BackendForm, EndpointForm, VariableForm
 from .models import Backend, Endpoint, Variable
-from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints, configs_to_backend, read_configfile
+from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints, \
+    configs_to_backend, read_configfile, BodyHandler
 import os
 from werkzeug import secure_filename
 
@@ -157,8 +158,16 @@ def endpoint_register(ep_id=None):
     """
     form = EndpointForm(request.form)
     if request.method == 'POST' and form.validate():
+        body_handler = BodyHandler()
 
         endpoint = form.get_endpoint()
+        if 'file' in request.files:
+            file = request.files['file']
+            filename = secure_filename(file.filename)
+            full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(full_path)
+            body_handler.transfer_body(full_path, filename)
+            form.body.data = body_handler.read_body(filename)
 
         orig_endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
 
@@ -169,18 +178,14 @@ def endpoint_register(ep_id=None):
             db.session.commit()
 
         if len(form.body.data) != 0:
-            f = open("body_{}".format(ep_id), "w")
-            f.write(form.body.data)
-            f.close()
-
-        #create_configfile(endpoint.backend)
+            body_handler.write_body(value=form.body.data, name="body_{}_{}".format(str(endpoint.backend), ep_id))
 
         return redirect(request.referrer)
     else:
         if ep_id:
             endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
-            if endpoint:
-                form.set_endpoint(endpoint)
+    if endpoint:
+        form.set_endpoint(endpoint)
 
     return render_template('endpoint_register.html', form=form)
 
@@ -203,11 +208,8 @@ def backend_add_endpoint(be_id=None):
         db.session.add(endpoint)
 
         if len(form.body.data) != 0:
-            f = open("body_{}".format(endpoint.id), "w")
-            f.write(form.body.data)
-            f.close()
-
-        #create_configfile(be_id)
+            body_handler = BodyHandler()
+            body_handler.write_body(value=form.body.data, name="body_{}_{}".format(str(endpoint.backend), endpoint.id))
 
         return redirect(request.referrer)
     else:

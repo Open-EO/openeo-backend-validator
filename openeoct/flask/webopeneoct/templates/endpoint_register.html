@@ -30,12 +30,14 @@
 <body>
 
 {% from "_formhelpers.html" import render_field %}
-<form method=post>
+<form method="post", enctype = "multipart/form-data">
   <dl>
       {{ render_field(form.id) }}
     {{ render_field(form.backend) }}
     {{ render_field(form.url) }}
     {{ render_field(form.type) }}
+      <dt><label>Upload body from file</label>
+      <dd><input type = "file" name = "file"/> </dd>
       {{ render_field(form.body) }}
       {{ render_field(form.optional) }}
       {{ render_field(form.group) }}
@@ -47,6 +49,5 @@
   <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
   <button type="button" onclick="window.location.href='{{ url_for('backend_edit', be_id=form.backend.data) }}';">Backend</button>
 </form>
-
 </body>
 </html>

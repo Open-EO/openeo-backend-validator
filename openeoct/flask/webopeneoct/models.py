@@ -210,7 +210,8 @@ class Endpoint(db.Model):
         self.group = endpoint.group
         self.timeout = endpoint.timeout
         self.order = endpoint.order
-        self.id = endpoint.id
+        if endpoint.id:
+            self.id = endpoint.id
 
     def to_json(self):
         endpoint_dict = {
@@ -271,4 +272,3 @@ class Result:
                 self.success = True
             else:
                 self.success = False
-

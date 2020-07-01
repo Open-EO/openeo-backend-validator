@@ -7,6 +7,7 @@ import os
 import time
 from shutil import copyfile
 import requests
+import uuid
 
 WORKING_DIR = "../.."
 PYTEST_DIR = "../../../openeo_compliance_tests/"
@@ -42,14 +43,14 @@ def create_configfile(be_id, plainpwd=True):
     print(new_toml_string)
     with open(config_path, "w") as text_file:
         text_file.write(new_toml_string)
-
+        text_file.close()
     return config_path
 
 
 def read_configfile(file_path):
     with open(file_path) as file:
         config_dict = toml.loads(file.read())
-
+        file.close()
     return config_dict
 
 
@@ -243,3 +244,40 @@ def get_pytest_static_path(be_id):
     #result_path = os.path.join(PYTEST_DIR, "static/report_{}.html".format(be_id))
     #result_path = os.path.abspath(result_path)
     return result_path
+
+
+class BodyHandler:
+    """
+    Result class that contains all information related to an result of an validation.
+    """
+    basedir = "body/"
+
+    def load_bodies(self):
+        bodies = {}
+        body_files = self.get_bodies_files()
+
+        for b_file in body_files:
+            bodies[b_file] = self.read_body(b_file)
+        return bodies
+
+    def get_bodies_files(self):
+        return [f for f in os.listdir(self.basedir) if os.path.isfile(os.path.join(self.basedir, f))]
+
+    def read_body(self, name):
+        with open(os.path.join(self.basedir, name)) as file:
+            value = file.read()
+            file.close()
+        return value
+
+    def write_body(self, value, name=None):
+        if not name:
+            name = uuid.uuid4().hex[:6].upper()
+        f = open(os.path.join(self.basedir, name), "w")
+        f.write(value)
+        f.close()
+
+    def transfer_body(self, orig_file, name):
+        with open(orig_file) as file:
+            value = file.read()
+            file.close()
+        self.write_body(value, name=name)

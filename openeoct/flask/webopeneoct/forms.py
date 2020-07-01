@@ -3,6 +3,7 @@ from wtforms import Form, BooleanField, StringField, PasswordField, validators, 
 from wtforms.validators import DataRequired
 from wtforms.widgets import PasswordInput
 from .models import Backend, Endpoint, Variable
+from .service import BodyHandler
 import os
 
 
@@ -196,11 +197,15 @@ class EndpointForm(Form):
             self.order.data = endpoint.order
         self.id.data = endpoint.id
 
-        body_file = "body_{}".format(self.id.data)
-        if os.path.isfile(body_file):
-            f = open(body_file, "r")
-            self.body.data = f.read()
-            f.close()
+        if endpoint.body:
+            body_handler = BodyHandler()
+            self.body.data = body_handler.read_body(endpoint.body)
+
+        # body_file = "body_{}".format(self.id.data)
+        # if os.path.isfile(body_file):
+        #     f = open(body_file, "r")
+        #     self.body.data = f.read()
+        #     f.close()
 
     def get_endpoint(self):
         """
@@ -211,5 +216,8 @@ class EndpointForm(Form):
            endpoint : Endpoint
                Endpoint instance with values of the form.
         """
-        return Endpoint(self.backend.data, self.url.data, self.type.data, optional=self.optional.data,
-                        group=self.group.data, timeout=self.timeout.data, order=self.order.data)
+        ep = Endpoint(self.backend.data, self.url.data, self.type.data, optional=self.optional.data,
+                 group=self.group.data, timeout=self.timeout.data, order=self.order.data, id=self.id.data)
+        if self.body.data:
+            ep.body = "body_{}_{}".format(str(self.backend.data), self.id.data)
+        return ep
