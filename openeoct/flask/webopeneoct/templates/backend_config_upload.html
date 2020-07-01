@@ -30,6 +30,9 @@
   <dl>
     <dt><label for="name">Name</label>
         <dd><input id="name" name="name" type="text" value="{{ name }}"> </dd>
+      {% if warning_message %}
+        <dt><label style="color:red;">{{ warning_message }}</label>
+      {% endif %}
       <dt><label>Configfiles</label>
       <dd><input type = "file" name = "file" accept=".json, .toml" multiple/> </dd>
   </dl>

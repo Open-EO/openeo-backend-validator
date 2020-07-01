@@ -7,7 +7,7 @@ from .service import run_validation, create_configfile, run_pytest_validation, g
     configs_to_backend, read_configfile, BodyHandler
 import os
 from werkzeug import secure_filename
-
+from sqlalchemy.exc import IntegrityError
 
 @app.route('/')
 def home():
@@ -99,6 +99,13 @@ def backend_register_cfg(be_id=None):
         name = ""
         if "name" in request.form:
             name = request.form["name"]
+
+        if not backend and name:
+            ba = Backend.query.filter(Backend.name == name).first()
+            if ba:
+                return render_template('backend_config_upload.html', name=name,
+                                       warning_message="Error backend name already exists!")
+
         file_list = request.files.getlist("file")
 
         file_paths = []
@@ -117,10 +124,11 @@ def backend_register_cfg(be_id=None):
             configs_to_backend(file_paths=file_paths, name=name)
 
         db.session.commit()
-
-        return redirect(url_for('home'))
-
-    return render_template('backend_config_upload.html', name=name)
+        if be_id:
+            return redirect(request.referrer)
+        else:
+            return redirect(url_for('home'))
+    return render_template('backend_config_upload.html', name=name, warning_message=None)
 
 
 @app.route('/backend/gen_get_endpoints/<be_id>', methods=['GET'])

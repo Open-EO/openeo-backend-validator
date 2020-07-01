@@ -97,7 +97,6 @@ class Backend(db.Model):
                 endpoint = Endpoint(backend=self.id, url=None, type=None, id=nam)
                 endpoint.from_json(val)
                 self.append_endpoint(endpoint)
-                #self.endpoints.append(endpoint) #TODO: Check if endpoint with same id already is there...
 
     def append_variable(self, variable):
         for existing_var in self.variables:
