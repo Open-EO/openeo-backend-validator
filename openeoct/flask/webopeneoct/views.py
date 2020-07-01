@@ -3,7 +3,7 @@ from openeoct.flask.webopeneoct import app, db
 from flask import request, flash, redirect, url_for, render_template, send_file
 from .forms import BackendForm, EndpointForm, VariableForm
 from .models import Backend, Endpoint, Variable
-from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints, configs_to_backend
+from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints, configs_to_backend, read_configfile
 import os
 from werkzeug import secure_filename
 
@@ -83,7 +83,14 @@ def backend_register():
 
 
 @app.route('/backend/registercfg/', methods=['GET', 'POST'])
-def backend_register_cfg():
+@app.route('/backend/registercfg/<be_id>', methods=['GET', 'POST'])
+def backend_register_cfg(be_id):
+
+    name = ""
+
+    if be_id:
+        backend = Backend.query.filter(Backend.id == be_id).first()
+        name = backend.name
 
     if request.method == 'POST':
 
@@ -98,13 +105,20 @@ def backend_register_cfg():
             f.save(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
             file_paths.append(os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)))
 
-        configs_to_backend(file_paths=file_paths, name=name)
+        if backend:
+            if name:
+                backend.name = name
+            for file in file_paths:
+                config_json = read_configfile(file)
+                backend.append_config(config_json)
+        else:
+            configs_to_backend(file_paths=file_paths, name=name)
 
         db.session.commit()
 
         return redirect(url_for('home'))
 
-    return render_template('backend_config_upload.html')
+    return render_template('backend_config_upload.html', name=name)
 
 
 @app.route('/backend/gen_get_endpoints/<be_id>', methods=['GET'])

@@ -31,7 +31,7 @@
 
 {% from "_formhelpers.html" import render_field %}
 <form method=post>
-  <dl>
+  <dl><div class="container">
     {{ render_field(form.name) }}
     {{ render_field(form.url) }}
       {{ render_field(form.version) }}
@@ -39,7 +39,7 @@
     {{ render_field(form.authurl) }}
       {{ render_field(form.username) }}
       {{ render_field(form.password) }}
-
+</div><div class="container">
             <dt><label>Variables</label>
 
             <table class="table table-condensed" id="variablelist">
@@ -62,14 +62,17 @@
         </tbody>
 </table>
 <dd><button type="button" onclick="window.location.href='{{ url_for('backend_add_variable', be_id=form.id.data) }}';">Add Variable <span class="glyphicon glyphicon-plus"></span></button>
-
+</div><div class="container">
       <dt><label>Endpoints</label>
           {% if endpoints %}
             <table class="table table-condensed" id="backendlist">
         <thead>
           <tr>
-            <th>URL</th>
-            <th>Type</th>
+            <th>Id</th>
+            <th>Path</th>
+              <th>Method</th>
+              <th>Order</th>
+              <th>Group</th>
               <th>Edit</th>
               <th>Delete</th>
           </tr>
@@ -78,8 +81,11 @@
 
                 {% for endpoint in endpoints %}
                 <tr>
+                    <td>{{ endpoint.id }}</td>
                     <td>{{ endpoint.url }}</td>
                     <td>{{ endpoint.type }}</td>
+                    <td>{{ endpoint.order }}</td>
+                    <td>{{ endpoint.group }}</td>
                     <td><button type="button" onclick="window.location.href='{{ url_for( 'endpoint_register', ep_id=endpoint.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
                     <td><button type="button" onclick="window.location.href='{{ url_for('backend_del_endpoint', ep_id=endpoint.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
                 </tr>
@@ -94,9 +100,9 @@
         <dd><button type="button" onclick="window.location.href='{{ url_for('backend_gen_all_endpoints', be_id=form.id.data) }}';">Generate ALL Endpoints <span class="glyphicon glyphicon-plus"></span></button>
       {% endif %}
 
-
+</div>
   </dl>
-
+<div class="container">
   {% if form.id.data %}
   <p><input type=submit value=Update>
   {% else %}
@@ -106,7 +112,9 @@
     {% if form.id.data %}
   <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
     <button type="button" onclick="window.location.href='{{ url_for( 'backend_download', be_id=form.id.data ) }}';">Download</button>
+    <button type="button" onclick="window.location.href='{{ url_for( 'backend_register_cfg', be_id=form.id.data ) }}';">Append Configfile</button>
     {% endif %}
+</div>
 </form>
 
 </body>
