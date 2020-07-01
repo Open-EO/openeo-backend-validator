@@ -85,9 +85,10 @@ def backend_register():
 
 @app.route('/backend/registercfg/', methods=['GET', 'POST'])
 @app.route('/backend/registercfg/<be_id>', methods=['GET', 'POST'])
-def backend_register_cfg(be_id):
+def backend_register_cfg(be_id=None):
 
     name = ""
+    backend = None
 
     if be_id:
         backend = Backend.query.filter(Backend.id == be_id).first()
@@ -276,6 +277,17 @@ def backend_del_variable(va_id=None):
         db.session.commit()
         #create_configfile(be_id)
 
+    return redirect(request.referrer)
+
+
+@app.route('/backend/del/<be_id>', methods=['GET', 'POST'])
+def backend_delete(be_id=None):
+    backend = Backend.query.filter(Backend.id == be_id).first()
+    # be_id = variable.backend
+    #db.session.delete(backend)
+    backend.delete()
+    db.session.commit()
+    # create_configfile(be_id)
     return redirect(request.referrer)
 
 

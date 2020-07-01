@@ -32,6 +32,7 @@
             <th>OpenAPI</th>
               <th>Endpoints</th>
               <th>Validate</th>
+              <th>Delete</th>
           </tr>
         </thead>
         <tbody>
@@ -42,6 +43,7 @@
                 <td>{{ backend.openapi }}</td>
                 <td><button type="button" onclick="window.location.href='{{ url_for( 'endpoint_list', be_id=backend.id ) }}';">Endpoints</button></td>
                 <td><button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=backend.id ) }}';">Validate</button></td>
+                <td><button type="button" onclick="window.location.href='{{ url_for('backend_delete', be_id=backend.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
             </tr>
             {% endfor %}
         </tbody>

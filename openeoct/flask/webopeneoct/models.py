@@ -33,6 +33,13 @@ class Backend(db.Model):
         self.username = username
         self.password = password
 
+    def delete(self):
+        for ep in self.endpoints:
+            db.session.delete(ep)
+        for va in self.variables:
+            db.session.delete(va)
+        db.session.delete(self)
+
     def set(self, backend):
         """
         Sets the backend to the given backend instance, except for the id.
@@ -50,6 +57,7 @@ class Backend(db.Model):
         self.authurl = backend.authurl
         self.username = backend.username
         self.password = backend.password
+        self.version = backend.version
 
     def get_url(self):
         if not self.version:
@@ -57,10 +65,10 @@ class Backend(db.Model):
 
         resp = requests.get(self.url + "/.well-known/openeo")
         versions = resp.json()
-
-        for version in versions.get("versions"):
-            if version.get("api_version") == self.version:
-                return version.get("url")
+        if versions.get("versions"):
+            for version in versions.get("versions"):
+                if version.get("api_version") == self.version:
+                    return version.get("url")
 
         return self.url
 
@@ -177,7 +185,7 @@ class Endpoint(db.Model):
     timeout = db.Column(db.Integer)
     order = db.Column(db.Integer)
 
-    backend = db.Column(db.Integer, db.ForeignKey('backend.id'))
+    backend = db.Column(db.Integer, db.ForeignKey('backend.id'), primary_key=True)
 
     def __init__(self, backend, url, type, id=None, body=None, head=None, auth=None, optional=False,
                  group="nogroup", timeout=None, order=None):
