@@ -30,6 +30,10 @@
 <body>
 
 {% from "_formhelpers.html" import render_field %}
+<div class="container">
+
+    <div class="row">
+        <h3>Create Endpoint</h3>
 <form method="post", enctype = "multipart/form-data">
   <dl>
       {{ render_field(form.id) }}
@@ -44,10 +48,15 @@
       {{ render_field(form.timeout) }}
       {{ render_field(form.order) }}
   </dl>
-  <p><input type=submit value=Submit>
+            <div class="row">
+    <hr>
+</div>
+  <p><input class="btn btn-success" type=submit value=Submit>
 
-  <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
-  <button type="button" onclick="window.location.href='{{ url_for('backend_edit', be_id=form.backend.data) }}';">Backend</button>
+  <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+  <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_edit', be_id=form.backend.data) }}';">Backend</button>
 </form>
+        </div>
+    </div>
 </body>
 </html>

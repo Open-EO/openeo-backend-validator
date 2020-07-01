@@ -12,6 +12,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///' + os.path.join(basedir, 'op
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['UPLOAD_FOLDER'] = '/tmp'
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1 MB maximum upload file size
+app.config['BODY_PATH'] = "body"
+app.config['D28_Folder'] = "/data/REPO/openeo-D28"
 db = SQLAlchemy(app)
 
 from openeoct.flask.webopeneoct import views, models

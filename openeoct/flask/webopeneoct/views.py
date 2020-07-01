@@ -173,10 +173,12 @@ def endpoint_register(ep_id=None):
         if 'file' in request.files:
             file = request.files['file']
             filename = secure_filename(file.filename)
-            full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(full_path)
-            body_handler.transfer_body(full_path, filename)
-            form.body.data = body_handler.read_body(filename)
+            if filename:
+                full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(full_path)
+                body_path = "body_{}_{}".format(str(endpoint.backend), ep_id)
+                body_handler.transfer_body(full_path, body_path)
+                form.body.data = body_handler.read_body(body_path)
 
         orig_endpoint = Endpoint.query.filter(Endpoint.id == ep_id).first()
 
@@ -309,16 +311,17 @@ def backend_validate(be_id):
     be_id : int
         ID of backend
     """
-    create_configfile(be_id=be_id)
     backend = Backend.query.filter(Backend.id == be_id).first()
 
     form = BackendForm(request.form)
 
     form.set_backend(backend)
 
-    if backend.output == "result_None.json":
+    if backend.output == "result_None.json" or not backend.output:
         backend.output = "result_{}.json".format(backend.id)
         db.session.commit()
+
+    create_configfile(be_id=be_id)
 
     results = run_validation(be_id)
 
@@ -372,7 +375,7 @@ def backend_validate_pytest(be_id):
 
     #results = run_validation(be_id)
     result_path = run_pytest_validation(be_id)
-    print(result_path)
+
     if result_path:
         return redirect(url_for('static', filename=result_path)) # return render_template('backend_validate_pytest.html', form=form, result_path=result_path)
 

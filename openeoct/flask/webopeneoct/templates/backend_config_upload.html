@@ -26,6 +26,8 @@
 <body>
 
 {% from "_formhelpers.html" import render_field %}
+<div class="container">
+    <div class="row">
 <form method="post", enctype = "multipart/form-data">
   <dl>
     <dt><label for="name">Name</label>
@@ -34,13 +36,15 @@
         <dt><label style="color:red;">{{ warning_message }}</label>
       {% endif %}
       <dt><label>Configfiles</label>
-      <dd><input type = "file" name = "file" accept=".json, .toml" multiple/> </dd>
+      <dd><input class="btn btn-primary" type = "file" name = "file" accept=".json, .toml" multiple/> </dd>
   </dl>
+        <div class="row">
+    <hr>
+</div>
+  <p><input class="btn btn-success"type=submit value=Create>
 
-  <p><input type=submit value=Create>
-
-  <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
-</form>
-
+  <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+</form></div>
+</div>
 </body>
 </html>

@@ -1,6 +1,10 @@
 from openeoct.flask.webopeneoct import db
 import requests
 import os
+#import pathlib
+from pathlib import PosixPath, Path
+from ..webopeneoct import app
+# from .service import BodyHandler
 
 
 class Backend(db.Model):
@@ -62,13 +66,15 @@ class Backend(db.Model):
     def get_url(self):
         if not self.version:
             return self.url
-
-        resp = requests.get(self.url + "/.well-known/openeo")
-        versions = resp.json()
-        if versions.get("versions"):
-            for version in versions.get("versions"):
-                if version.get("api_version") == self.version:
-                    return version.get("url")
+        try:
+            resp = requests.get(self.url + "/.well-known/openeo")
+            versions = resp.json()
+            if versions.get("versions"):
+                for version in versions.get("versions"):
+                    if version.get("api_version") == self.version:
+                        return version.get("url")
+        except:
+            return self.url
 
         return self.url
 
@@ -234,10 +240,11 @@ class Endpoint(db.Model):
         if self.optional:
             endpoint_dict["optional"] = self.optional
 
-        body_file = "body_{}".format(self.id)
-        if os.path.isfile(body_file):
-            body_full_path = os.getcwd() + "/" + body_file
-            endpoint_dict["endpoints." + str(self.id)]["body"] = body_full_path
+        if self.body:
+            abs_path = Path().absolute()
+            abs_path = abs_path.joinpath(app.config['BODY_PATH'])
+            abs_path = abs_path.joinpath(self.body)
+            endpoint_dict["body"] = str(abs_path)
 
         return endpoint_dict
 
@@ -260,22 +267,22 @@ class Endpoint(db.Model):
             self.body = ep_json["body"]
 
 
-class Result:
-    """
-    Result class that contains all information related to an result of an validation.
-    """
-    endpoint = None
-    value = {}
-    success = False
-
-    def __init__(self, endpoint, value, success=None):
-        self.endpoint = endpoint
-        self.value = value
-
-        if success:
-            self.success = success
-        else:
-            if value == "Valid":
-                self.success = True
-            else:
-                self.success = False
+# class Result:
+#     """
+#     Result class that contains all information related to an result of an validation.
+#     """
+#     endpoint = None
+#     value = {}
+#     success = False
+#
+#     def __init__(self, endpoint, value, success=None):
+#         self.endpoint = endpoint
+#         self.value = value
+#
+#         if success:
+#             self.success = success
+#         else:
+#             if value == "Valid":
+#                 self.success = True
+#             else:
+#                 self.success = False

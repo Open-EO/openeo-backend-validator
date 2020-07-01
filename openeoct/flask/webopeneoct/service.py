@@ -1,4 +1,4 @@
-from .models import Backend, Endpoint, Result
+from .models import Backend, Endpoint
 from openeoct.flask.webopeneoct import db
 import json
 import toml
@@ -8,6 +8,7 @@ import time
 from shutil import copyfile
 import requests
 import uuid
+from ..webopeneoct import app
 
 WORKING_DIR = "../.."
 PYTEST_DIR = "../../../openeo_compliance_tests/"
@@ -40,7 +41,7 @@ def create_configfile(be_id, plainpwd=True):
             toml_dict["password"] = "CENSORED"
 
     new_toml_string = toml.dumps(toml_dict)
-    print(new_toml_string)
+    # print(new_toml_string)
     with open(config_path, "w") as text_file:
         text_file.write(new_toml_string)
         text_file.close()
@@ -115,12 +116,12 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
                         continue
 
                 new_ep = Endpoint(be_id, ep["path"], met)
-                new_ep.id = ep["path"].replace("/", "") + "_id"
+                new_ep.id = ep["path"].replace("/", "") + "_gen"
 
                 db.session.add(new_ep)
                 db.session.commit()
                 ep_list.append(new_ep)
-                print(ep)
+                # print(ep)
 
     create_configfile(be_id)
     return ep_list
@@ -168,12 +169,12 @@ def read_result(be_id):
 
         result = json.loads(result_file.read())
 
-        result_list = []
+        # result_list = []
+        #
+        # for key, val in result.items():
+        #     result_list.append(Result(key, val))
 
-        for key, val in result.items():
-            result_list.append(Result(key, val))
-
-        return result_list
+        return result
     return None
 
 
@@ -250,7 +251,7 @@ class BodyHandler:
     """
     Result class that contains all information related to an result of an validation.
     """
-    basedir = "body/"
+    basedir = app.config['BODY_PATH']
 
     def load_bodies(self):
         bodies = {}
@@ -264,10 +265,13 @@ class BodyHandler:
         return [f for f in os.listdir(self.basedir) if os.path.isfile(os.path.join(self.basedir, f))]
 
     def read_body(self, name):
-        with open(os.path.join(self.basedir, name)) as file:
-            value = file.read()
-            file.close()
-        return value
+        try:
+            with open(os.path.join(self.basedir, name)) as file:
+                value = file.read()
+                file.close()
+            return value
+        except:
+            return "Body file not found!"
 
     def write_body(self, value, name=None):
         if not name:
@@ -281,3 +285,6 @@ class BodyHandler:
             value = file.read()
             file.close()
         self.write_body(value, name=name)
+
+    def get_abs_path(self, name):
+        return os.path.join(os.getcwd(), self.basedir, name)

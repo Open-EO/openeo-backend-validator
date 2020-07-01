@@ -30,6 +30,8 @@
 <body>
 
 {% from "_formhelpers.html" import render_field %}
+<div class="container">
+    <h3>New Backend</h3>
 <form method=post>
   <dl>
     {{ render_field(form.name) }}
@@ -40,17 +42,19 @@
       {{ render_field(form.username) }}
       {{ render_field(form.password) }}
   </dl>
-
+        <div class="row">
+    <hr>
+</div>
   {% if form.id.data %}
-  <p><input type=submit value=Update>
+  <p><input class="btn btn-success" type=submit value=Update>
   {% else %}
-  <p><input type=submit value=Register>
+  <p><input class="btn btn-success" type=submit value=Register>
   {% endif %}
-  <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+  <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
     {% if form.id.data %}
-  <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
+  <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
     {% endif %}
 </form>
-
+</div>
 </body>
 </html>
