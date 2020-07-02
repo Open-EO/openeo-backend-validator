@@ -48,10 +48,28 @@ def create_configfile(be_id, plainpwd=True):
     return config_path
 
 
-def read_configfile(file_path):
+def read_file(file_path):
     with open(file_path) as file:
-        config_dict = toml.loads(file.read())
+        file_data = file.read()
         file.close()
+    return file_data
+
+
+def write_file(file_path, content):
+    with open(file_path, "w") as text_file:
+        text_file.write(content)
+        text_file.close()
+    return file_path
+
+
+def write_configfile(config_json, file_path):
+    new_toml_string = toml.dumps(config_json)
+    # print(new_toml_string)
+    return write_file(file_path, new_toml_string)
+
+
+def read_configfile(file_path):
+    config_dict = toml.loads(read_file(file_path))
     return config_dict
 
 
@@ -201,6 +219,24 @@ def run_validation(be_id):
     print(err)
     if len(err) != 0:
         return ["Error executing the openeoct command"]
+
+    return read_result(be_id)
+
+
+def run_validation_deliverable(be_id):
+
+    deliverable_path = app.config["D28_Folder"]
+    be_config_path = os.path.join(deliverable_path, "src", "openeo_d28", "D28_config_{}.toml".format(be_id))
+    ep_config_path = os.path.join(deliverable_path, "src", "openeo_d28", "openeo_v1.0_endpoints.toml")
+
+    cmd = ['./openeoct', 'config', be_config_path, ep_config_path]
+
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=WORKING_DIR)
+
+    out, err = p.communicate()
+    print(err)
+    if len(err) != 0:
+        return str(err)
 
     return read_result(be_id)
 

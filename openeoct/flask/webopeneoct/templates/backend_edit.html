@@ -32,6 +32,7 @@
 {% from "_formhelpers.html" import render_field %}
 <form method=post>
   <div class="container">
+
       <div class="row">
           <h2>Backend</h2>
     {{ render_field(form.name) }}
@@ -44,6 +45,7 @@
       <div class="row">
     <hr>
 </div>
+
 <div class="row">
             <dt><h2>Variables</h2>
 
@@ -103,7 +105,11 @@
 </table>
       {% endif %}
       {% if form.id.data %}
+          {% if warning_message %}
+        <label style="color:red;">{{ warning_message }}</label>
+      {% endif %}
       <div class="input-group">
+
         <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_add_endpoint', be_id=form.id.data) }}';">Add Endpoint <span class="glyphicon glyphicon-plus"></span></button>
         <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_gen_get_endpoints', be_id=form.id.data) }}';">Generate GET Endpoints <span class="glyphicon glyphicon-plus"></span></button>
         <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_gen_all_endpoints', be_id=form.id.data) }}';">Generate ALL Endpoints <span class="glyphicon glyphicon-plus"></span></button>

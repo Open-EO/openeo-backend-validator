@@ -22,6 +22,30 @@ In the flask folder there is a simple web application GUI for this tool also ava
 
 1. this creates an executable in the same directory named "openeoct" ("openeoct.exe" on Windows)
 
+## Execution
+
+To run the tool on the command line, provide the configuration file using the `config` command.
+Example usage with the example `gee_config.toml` config file:
+
+    ./openeoct config gee_config1.toml gee_config2.toml gee_config3.json ...
+
+(On Windows: use "`openeoct.exe`" instead of "`openeoct`").
+
+There is also a debug flag when calling the command, which will write the raw requests and resonses into stdout (it needs to be before the "config" parameter:
+```
+./openeoct --debug config gee_config1.toml gee_config2.toml gee_config3.json ...
+```
+
+If not well formatted go errors occur, please update the dependencies, they might be outdated:
+```bash
+# The ones that probably need updates:
+go get -u github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3
+go get -u github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3filter
+
+# or updating all installed modules:
+go get -u -m all
+```
+If that does not help feel free to add an issue, but please first have a look at the existing ones.
 
 ## Configuration
 
@@ -193,32 +217,6 @@ password="test123"
   url = "/endpointB"
   request_type = "{test2}"
 ```
-
-## Execution
-
-To run the tool on the command line, provide the configuration file using the `config` command.
-Example usage with the example `gee_config.toml` config file:
-
-    ./openeoct config gee_config1.toml gee_config2.toml gee_config3.json ...
-
-(On Windows: use "`openeoct.exe`" instead of "`openeoct`").
-
-There is also a debug flag when calling the command, which will write the raw requests and resonses into stdout (it needs to be before the "config" parameter:
-```
-./openeoct --debug config gee_config1.toml gee_config2.toml gee_config3.json ...
-```
-
-If not well formated go errors occur, please update the dependencies, they might be outdated:
-```bash
-# The ones that probably need updates:
-go get -u github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3
-go get -u github.com/Open-EO/openeo-backend-validator/openeoct/kin-openapi/openapi3filter
-
-# or updating all installed modules:
-go get -u -m all
-```
-If that does not help feel free to add an issue if you run into problems, but please look first into the existing ones.
-
 
 ### JSON Output
 

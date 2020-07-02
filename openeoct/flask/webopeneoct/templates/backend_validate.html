@@ -28,7 +28,7 @@
 
 <div class="container">
   <div class="mt-4">
-      <h2>{{ form.name.data }}</h2>
+      <h2>{{ form.name.data }} - Validation</h2>
   </div>
   <div class="mt-4">
   {% if "result" in results %}
@@ -43,6 +43,7 @@
         <thead>
           <tr>
             <th>Endpoint</th>
+              <th>Method</th>
             <th>Message</th>
             <th>State</th>
           </tr>
@@ -51,6 +52,7 @@
         {% for ep_id, ep_value in group["endpoints"].items() %}
             <tr>
                 <td>{{ ep_id }}</td>
+                <td>{{ ep_value["type"] }}</td>
                 <td>{{ ep_value["message"] }}</td>
                 {% if ep_value["state"] == "Valid" %}
                 <td><span class="glyphicon glyphicon-ok" style="color:green"></span></td>
@@ -79,6 +81,11 @@
 </div>
         <div class="row">
     <hr>
+</div>
+<div class="container">
+<label>Valid: <span class="glyphicon glyphicon-ok" style="color:green"></span></label>
+    <label>Invalid: <span class="glyphicon glyphicon-remove" style="color:red"></span></label>
+        <label>Error: <span class="glyphicon glyphicon-warning-sign" style="color:red"></span></label>
 </div>
 <div class="container">
           {% if "stats" in results %}

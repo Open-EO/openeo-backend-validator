@@ -4,10 +4,10 @@ from flask import request, flash, redirect, url_for, render_template, send_file
 from .forms import BackendForm, EndpointForm, VariableForm
 from .models import Backend, Endpoint, Variable
 from .service import run_validation, create_configfile, run_pytest_validation, gen_endpoints, \
-    configs_to_backend, read_configfile, BodyHandler
+    configs_to_backend, read_configfile, BodyHandler, read_file, write_configfile, write_file, run_validation_deliverable
 import os
 from werkzeug import secure_filename
-from sqlalchemy.exc import IntegrityError
+
 
 @app.route('/')
 def home():
@@ -137,7 +137,23 @@ def backend_gen_get_endpoints(be_id):
     Generates an endpoint in the config file for each endpoint listed in the capabilities page of the backend.
     If an endpoint does already exists, it is not overwritten but ignored.
     """
-    gen_endpoints(be_id)
+    try:
+        gen_endpoints(be_id)
+    except:
+        if be_id:
+            form = BackendForm(request.form)
+            backend = Backend.query.filter(Backend.id == be_id).first()
+            if backend:
+                form.set_backend(backend)
+        endpoints = None
+        if be_id:
+            endpoints = Endpoint.query.filter(Endpoint.backend == be_id).all()
+
+        variables = None
+        if be_id:
+            variables = Variable.query.filter(Variable.backend == be_id).all()
+        return render_template('backend_edit.html', form=form, endpoints=endpoints, variables=variables,
+                               warning_message="Could not create GET endpoints, maybe URL is not valid!")
 
     return redirect(url_for('backend_edit', be_id=be_id))
 
@@ -148,7 +164,23 @@ def backend_gen_all_endpoints(be_id):
     Generates an endpoint in the config file for each endpoint listed in the capabilities page of the backend.
     If an endpoint does already exists, it is not overwritten but ignored.
     """
-    gen_endpoints(be_id, re_types=["GET", "POST", "PUT", "DELETE", "PATCH"], leave_ids=False)
+    try:
+        gen_endpoints(be_id, re_types=["GET", "POST", "PUT", "DELETE", "PATCH"], leave_ids=False)
+    except:
+        if be_id:
+            form = BackendForm(request.form)
+            backend = Backend.query.filter(Backend.id == be_id).first()
+            if backend:
+                form.set_backend(backend)
+        endpoints = None
+        if be_id:
+            endpoints = Endpoint.query.filter(Endpoint.backend == be_id).all()
+
+        variables = None
+        if be_id:
+            variables = Variable.query.filter(Variable.backend == be_id).all()
+        return render_template('backend_edit.html', form=form, endpoints=endpoints, variables=variables,
+                               warning_message="Could not create ALL endpoints, maybe URL is not valid!")
 
     return redirect(url_for('backend_edit', be_id=be_id))
 
@@ -299,6 +331,135 @@ def backend_delete(be_id=None):
     db.session.commit()
     # create_configfile(be_id)
     return redirect(request.referrer)
+
+
+@app.route('/backend/validate/deliverable/edit/<be_id>', methods=['GET', 'POST'])
+def backend_validate_deliverable_edit(be_id):
+    """
+    Validates all endpoints of a backend.
+
+    Parameters
+    ----------
+    be_id : int
+        ID of backend
+    """
+
+    deliverable_path = app.config["D28_Folder"]
+    deliverable_body_path = os.path.join(deliverable_path, "src", "openeo_d28", "body")
+    job_filepath = os.path.join(deliverable_body_path, "job_file_{}".format(be_id))
+    job_sync_filepath = os.path.join(deliverable_body_path, "job_sync_file_{}".format(be_id))
+    udp_filepath = os.path.join(deliverable_body_path, "udp_file_{}".format(be_id))
+    be_config_path = os.path.join(deliverable_path, "src", "openeo_d28", "D28_config_{}.toml".format(be_id))
+    sample_config_path = os.path.join(deliverable_path, "src", "openeo_d28", "SAMPLE_config.toml")
+
+    form = BackendForm(request.form)
+
+    if request.method == 'POST':
+        req_form = request.form
+        req_files = request.files
+        file = None
+        if 'udp_file' in req_files:
+            if req_files['udp_file'].filename != "":
+                file = req_files['udp_file']
+                file.save(udp_filepath)
+        if not file:
+            write_file(udp_filepath, req_form["udp"])
+
+        file = None
+        if 'job_file' in req_files:
+            file = req_files['job_file']
+            file.save(job_filepath)
+        if not file:
+            write_file(job_filepath, req_form["job"])
+
+        file = None
+        if 'job_sync_file' in req_files:
+            file = req_files['job_sync_file']
+            file.save(job_sync_filepath)
+        if not file:
+            write_file(job_sync_filepath, req_form["job_sync"])
+
+        backend = form.get_backend()
+        orig_backend = Backend.query.filter(Backend.id == be_id).first()
+
+        if not orig_backend:
+            db.session.add(backend)
+        else:
+            orig_backend.set(backend)
+            db.session.commit()
+
+        be_conf_json = read_configfile(sample_config_path)
+
+        be_conf_json["url"] = backend.url
+        be_conf_json["backendversion"] = backend.version
+        be_conf_json["username"] = backend.username
+        be_conf_json["password"] = backend.password
+        be_conf_json["output"] = "result_{}.json".format(be_id)
+
+        be_conf_json["variables"]["pg_filename"] = udp_filepath
+        be_conf_json["variables"]["job_filename"] = job_filepath
+        be_conf_json["variables"]["job_sync_filename"] = job_sync_filepath
+        req_form = request.form
+
+        if "udp_name" in req_form:
+            be_conf_json["variables"]["process_graph_id"] = req_form["udp_name"]
+        if "pre_job_id" in req_form:
+            be_conf_json["variables"]["job_id_precomputed"] = req_form["pre_job_id"]
+
+        write_configfile(be_conf_json, be_config_path)
+
+    backend = Backend.query.filter(Backend.id == be_id).first()
+    form.set_backend(backend)
+
+    if os.path.isfile(udp_filepath):
+        udp_value = read_file(udp_filepath)
+    else:
+        udp_value = read_file(os.path.join(deliverable_path, "src", "openeo_d28", "body", "EODC_user_process.json"))
+    if os.path.isfile(job_filepath):
+        job_value = read_file(job_filepath)
+    else:
+        job_value = read_file(os.path.join(deliverable_path, "src", "openeo_d28", "body", "EODC_job.json"))
+    if os.path.isfile(job_sync_filepath):
+        job_sync_value = read_file(job_sync_filepath)
+    else:
+        job_sync_value = read_file(os.path.join(deliverable_path, "src", "openeo_d28", "body", "EODC_job.json"))
+
+    udp_name = "test_udpname"
+    pre_job_id = "DEFAULT"
+    if os.path.isfile(be_config_path):
+        be_conf_json = read_configfile(be_config_path)
+        udp_name = be_conf_json["variables"]["process_graph_id"]
+        pre_job_id = be_conf_json["variables"]["job_id_precomputed"]
+
+    config_created = os.path.isfile(be_config_path)
+
+    return render_template('backend_deliverable.html', form=form, udp_value=udp_value, config_created=config_created,
+                           job_value=job_value, job_sync_value=job_sync_value, udp_name=udp_name, pre_job_id=pre_job_id)
+
+
+@app.route('/backend/validate/deliverable/<be_id>', methods=['GET', 'POST'])
+def backend_validate_deliverable(be_id):
+    """
+    Validates all endpoints of a backend.
+
+    Parameters
+    ----------
+    be_id : int
+        ID of backend
+    """
+    req = request
+    results = run_validation_deliverable(be_id)
+
+    if isinstance(results, str):
+        return "<h2>Error during execution! Have you applyed the changes on the D28 validation page?</h2><br>{}".format(str(results))
+
+    backend = Backend.query.filter(Backend.id == be_id).first()
+
+    form = BackendForm(request.form)
+
+    form.set_backend(backend)
+
+    return render_template('backend_validate.html', form=form, results=results)
 
 
 @app.route('/backend/validate/<be_id>')
