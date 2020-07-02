@@ -68,9 +68,22 @@
             <dd><textarea class="form-control" id="job_sync" name="job_sync" rows="20">{{ job_sync_value }}</textarea>
 </dt>
 </div>
+      <div class="row">
+            <dt><h2>Example Service</h2>
+          <label>Used for: POST /services</label>
+                    <dt><label>Upload from file</label>
+      <dd><input class="btn btn-primary" type = "file" name = "service_file"/> </dd>
+            <dd><textarea class="form-control" id="service" name="service" rows="20">{{ service_value }}</textarea>
+</dt>
+</div>
             <div class="row">
             <dt><h2>Precomputed Job Id</h2>
             <dd><input id="pre_job_id" name="pre_job_id" type="text" value="{{ pre_job_id }}">
+</dt>
+</div>
+                  <div class="row">
+            <dt><h2>Collection ID</h2>
+            <dd><input id="col_id" name="col_id" type="text" value="{{ col_id }}">
 </dt>
 </div>
     <div class="row">

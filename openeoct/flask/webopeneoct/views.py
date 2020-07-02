@@ -347,6 +347,7 @@ def backend_validate_deliverable_edit(be_id):
     deliverable_path = app.config["D28_Folder"]
     deliverable_body_path = os.path.join(deliverable_path, "src", "openeo_d28", "body")
     job_filepath = os.path.join(deliverable_body_path, "job_file_{}".format(be_id))
+    service_filepath = os.path.join(deliverable_body_path, "service_file_{}".format(be_id))
     job_sync_filepath = os.path.join(deliverable_body_path, "job_sync_file_{}".format(be_id))
     udp_filepath = os.path.join(deliverable_body_path, "udp_file_{}".format(be_id))
     be_config_path = os.path.join(deliverable_path, "src", "openeo_d28", "D28_config_{}.toml".format(be_id))
@@ -371,6 +372,13 @@ def backend_validate_deliverable_edit(be_id):
             file.save(job_filepath)
         if not file:
             write_file(job_filepath, req_form["job"])
+
+        file = None
+        if 'service_file' in req_files:
+            file = req_files['service_file']
+            file.save(service_filepath)
+        if not file:
+            write_file(service_filepath, req_form["service"])
 
         file = None
         if 'job_sync_file' in req_files:
@@ -399,12 +407,16 @@ def backend_validate_deliverable_edit(be_id):
         be_conf_json["variables"]["pg_filename"] = udp_filepath
         be_conf_json["variables"]["job_filename"] = job_filepath
         be_conf_json["variables"]["job_sync_filename"] = job_sync_filepath
+        be_conf_json["variables"]["service_filename"] = service_filepath
         req_form = request.form
 
         if "udp_name" in req_form:
             be_conf_json["variables"]["process_graph_id"] = req_form["udp_name"]
         if "pre_job_id" in req_form:
             be_conf_json["variables"]["job_id_precomputed"] = req_form["pre_job_id"]
+
+        if "col_id" in req_form:
+            be_conf_json["variables"]["col_id"] = req_form["col_id"]
 
         write_configfile(be_conf_json, be_config_path)
 
@@ -423,18 +435,26 @@ def backend_validate_deliverable_edit(be_id):
         job_sync_value = read_file(job_sync_filepath)
     else:
         job_sync_value = read_file(os.path.join(deliverable_path, "src", "openeo_d28", "body", "EODC_job.json"))
+    if os.path.isfile(service_filepath):
+        service_value = read_file(service_filepath)
+    else:
+        service_value = read_file(os.path.join(deliverable_path, "src", "openeo_d28", "body", "EODC_job.json"))
 
-    udp_name = "test_udpname"
+    udp_name = "DEFAULT"
     pre_job_id = "DEFAULT"
+    col_id = "Sentinel-2"
     if os.path.isfile(be_config_path):
         be_conf_json = read_configfile(be_config_path)
         udp_name = be_conf_json["variables"]["process_graph_id"]
         pre_job_id = be_conf_json["variables"]["job_id_precomputed"]
+        if "col_id" in be_conf_json["variables"]:
+            col_id = be_conf_json["variables"]["col_id"]
 
     config_created = os.path.isfile(be_config_path)
 
     return render_template('backend_deliverable.html', form=form, udp_value=udp_value, config_created=config_created,
-                           job_value=job_value, job_sync_value=job_sync_value, udp_name=udp_name, pre_job_id=pre_job_id)
+                           job_value=job_value, job_sync_value=job_sync_value, udp_name=udp_name, pre_job_id=pre_job_id,
+                           col_id=col_id, service_value=service_value)
 
 
 @app.route('/backend/validate/deliverable/<be_id>', methods=['GET', 'POST'])
