@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Backend Detail</title>
+    <title>Backend Validation</title>
 
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
 <style>
@@ -28,26 +28,36 @@
 
 <div class="container">
   <div class="mt-4">
-      <h2>{{ form.name.data }}</h2>
-      <h3>{{ form.url.data }}</h3>
+      <h2>{{ form.name.data }} - Validation</h2>
   </div>
   <div class="mt-4">
-  {% if results %}
+  {% if "result" in results %}
+      {% for gr_name, group in results["result"].items() %}
+      {% if group["group_summary"] == "Valid" %}
+      <h2><span class="glyphicon glyphicon-ok" style="color:green"></span> {{ gr_name }} </h2>
+      {% else %}
+      <h2><span class="glyphicon glyphicon-remove" style="color:red"></span> {{ gr_name }} </h2>
+      {% endif %}
+
   <table class="table table-condensed" id="resultlist">
         <thead>
           <tr>
             <th>Endpoint</th>
-            <th>Raw Result</th>
-            <th>Success</th>
+              <th>Method</th>
+            <th>Message</th>
+            <th>State</th>
           </tr>
         </thead>
         <tbody>
-            {% for result in results %}
+        {% for ep_id, ep_value in group["endpoints"].items() %}
             <tr>
-                <td>{{ result.endpoint }}</td>
-                <td>{{ result.value }}</td>
-                {% if result.success == True %}
+                <td>{{ ep_id }}</td>
+                <td>{{ ep_value["type"] }}</td>
+                <td>{{ ep_value["message"] }}</td>
+                {% if ep_value["state"] == "Valid" %}
                 <td><span class="glyphicon glyphicon-ok" style="color:green"></span></td>
+                {% elif ep_value["state"] == "Error"%}
+                <td><span class="glyphicon glyphicon-warning-sign" style="color:red"></span></td>
                 {% else %}
                 <td><span class="glyphicon glyphicon-remove" style="color:red"></span></td>
                 {% endif %}
@@ -55,14 +65,36 @@
             {% endfor %}
         </tbody>
 </table>
+
+      {% endfor %}
   {% endif %}
   </div></div>
+        <div class="row">
+    <hr>
+</div>
 <div class="text-center">
-    <button type="button" onclick="window.location.href='{{ url_for( 'backend_edit', be_id=form.id.data ) }}';">Edit</button>
-    <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
-    <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate_pytest', be_id=form.id.data ) }}';">Validate Pytests</button>
-    <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
-    <button type="button" onclick="window.location.href='{{ url_for('backend_add_endpoint', be_id=form.id.data) }}';">Add Endpoint</button>
+    <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for( 'backend_edit', be_id=form.id.data ) }}';">Edit</button>
+    <button class="btn btn-info" type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
+    <button class="btn btn-info" type="button" onclick="window.location.href='{{ url_for( 'backend_validate_pytest', be_id=form.id.data ) }}';">Validate Pytests</button>
+    <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+    <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_add_endpoint', be_id=form.id.data) }}';">Add Endpoint</button>
+</div>
+        <div class="row">
+    <hr>
+</div>
+<div class="container">
+<label>Valid: <span class="glyphicon glyphicon-ok" style="color:green"></span></label>
+    <label>Invalid: <span class="glyphicon glyphicon-remove" style="color:red"></span></label>
+        <label>Error: <span class="glyphicon glyphicon-warning-sign" style="color:red"></span></label>
+</div>
+<div class="container">
+          {% if "stats" in results %}
+        {% for cat, info in results["stats"].items() %}
+        {% for key, val in results["stats"][cat].items() %}
+            <b>{{ key }}</b>: {{ val }},
+      {% endfor %}
+      {% endfor %}
+      {% endif %}
 </div>
 </body>
 </html>

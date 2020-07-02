@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+
+  <title>D28 Validation</title>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+</head>
+<body>
+
+{% from "_formhelpers.html" import render_field %}
+<form method="post", enctype = "multipart/form-data">
+  <div class="container">
+
+      <div class="row">
+          <h1>D28 - Validation</h1>
+          <h2>Backend</h2>
+    {{ render_field(form.name) }}
+    {{ render_field(form.url) }}
+      {{ render_field(form.version) }}
+    {{ render_field(form.openapi) }}
+      {{ render_field(form.username) }}
+      {{ render_field(form.password) }}
+          </div>
+      <div class="row">
+    <hr>
+</div>
+<div class="row">
+            <dt><h2>User Defined Process</h2>
+    <label>Used for: POST /validation, PUT /process_graphs/pg_id</label>
+                <dd><label for="udp_name">Name</label>
+                <dd><input id="udp_name" name="udp_name" type="text" value="{{ udp_name }}">
+          <dt><label>Upload from file</label>
+      <dd><input class="btn btn-primary" type = "file" name = "udp_file"/> </dd>
+            <dd><textarea class="form-control" id="udp" name="udp" rows="20">{{ udp_value }}</textarea>
+</dt>
+</div>
+      <div class="row">
+            <dt><h2>Example Job</h2>
+          <label>Used for: POST /jobs, PATCH /jobs/job_id</label>
+                    <dt><label>Upload from file</label>
+      <dd><input class="btn btn-primary" type = "file" name = "job_file"/> </dd>
+            <dd><textarea class="form-control" id="job" name="job" rows="20">{{ job_value }}</textarea>
+</dt>
+</div>
+            <div class="row">
+            <dt><h2>Example Sync Job</h2>
+                <label>Used for: POST /result</label>
+                          <dt><label>Upload from file</label>
+      <dd><input class="btn btn-primary" type = "file" name = "job_sync_file"/> </dd>
+            <dd><textarea class="form-control" id="job_sync" name="job_sync" rows="20">{{ job_sync_value }}</textarea>
+</dt>
+</div>
+            <div class="row">
+            <dt><h2>Precomputed Job Id</h2>
+            <dd><input id="pre_job_id" name="pre_job_id" type="text" value="{{ pre_job_id }}">
+</dt>
+</div>
+    <div class="row">
+    <hr>
+</div>
+<div class="row">
+  <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+    <input class="btn btn-success" type=submit value="Apply Settings">
+    {% if config_created %}
+    <button class="btn btn-info" type="button" onclick="window.location.href='{{ url_for( 'backend_validate_deliverable', be_id=form.id.data ) }}';">Validate</button>
+    {% else %}
+    <label> You need to apply settings at least once, after that a validation button will appear here</label>
+    {% endif %}
+</div>
+      </div>
+</form>
+
+</body>
+</html>

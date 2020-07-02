@@ -1,4 +1,4 @@
-from .models import Backend, Endpoint, Result, Config
+from .models import Backend, Endpoint
 from openeoct.flask.webopeneoct import db
 import json
 import toml
@@ -7,29 +7,15 @@ import os
 import time
 from shutil import copyfile
 import requests
+import uuid
+from ..webopeneoct import app
 
 WORKING_DIR = "../.."
 PYTEST_DIR = "../../../openeo_compliance_tests/"
 PYTEST_CMD = "/home/bgoesswe/.pyenv/versions/miniconda3-latest/envs/openeoct/bin/pytest"
 
 
-def create_configfile(co_id):
-
-    config = Config.query.filter(Config.id == co_id).first()
-
-    config_path = "config_{}.toml".format(str(co_id))
-
-    toml_dict = config.to_json()
-
-    new_toml_string = toml.dumps(toml_dict)
-    print(config_path)
-    with open(config_path, "w") as text_file:
-        text_file.write(new_toml_string)
-
-    return config_path
-
-
-def create_configfiles(be_id):
+def create_configfile(be_id, plainpwd=True):
     """
     Creates the toml config file for the openeoct tool, according to the config stored in the database.
 
@@ -46,12 +32,45 @@ def create_configfiles(be_id):
     """
     backend = Backend.query.filter(Backend.id == be_id).first()
 
-    config_paths = []
+    config_path = "config_{}.toml".format(str(backend.id))
 
-    for config in backend.configs:
-        config_paths.append(create_configfiles(config.id))
+    toml_dict = backend.to_json()
 
-    return config_paths
+    if not plainpwd:
+        if "password" in toml_dict:
+            toml_dict["password"] = "CENSORED"
+
+    new_toml_string = toml.dumps(toml_dict)
+    # print(new_toml_string)
+    with open(config_path, "w") as text_file:
+        text_file.write(new_toml_string)
+        text_file.close()
+    return config_path
+
+
+def read_file(file_path):
+    with open(file_path) as file:
+        file_data = file.read()
+        file.close()
+    return file_data
+
+
+def write_file(file_path, content):
+    with open(file_path, "w") as text_file:
+        text_file.write(content)
+        text_file.close()
+    return file_path
+
+
+def write_configfile(config_json, file_path):
+    new_toml_string = toml.dumps(config_json)
+    # print(new_toml_string)
+    return write_file(file_path, new_toml_string)
+
+
+def read_configfile(file_path):
+    config_dict = toml.loads(read_file(file_path))
+    return config_dict
 
 
 def common_member(a, b):
@@ -66,12 +85,10 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
     """
     Generates an endpoint in the config file for each endpoint listed in the capabilities page of the backend.
     If an endpoint does already exists, it is not overwritten but ignored.
-
     Parameters
     ----------
     be_id : int
         ID of Backend
-
     Return
     ----------
     result_list : list
@@ -86,14 +103,7 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
     resp = requests.get(backend.get_url())
     capabilities = resp.json()
 
-    endpoints = []
-
-    cfg_id = None
-
-    for config in backend.configs:
-
-        endpoints += Endpoint.query.filter(Endpoint.config == config.id).all()
-        cfg_id = config.id
+    endpoints = Endpoint.query.filter(Endpoint.backend == backend.id).all()
 
     url_dict = {}
 
@@ -123,16 +133,29 @@ def gen_endpoints(be_id, re_types=["GET"], leave_ids=True):
                     if met in url_dict[ep["path"]]:
                         continue
 
-                new_ep = Endpoint(cfg_id, ep["path"], met)
-                new_ep.id = ep["path"].replace("/", "") + "_id"
+                new_ep = Endpoint(be_id, ep["path"], met)
+                new_ep.id = ep["path"].replace("/", "") + "_gen"
 
                 db.session.add(new_ep)
                 db.session.commit()
                 ep_list.append(new_ep)
-                print(ep)
+                # print(ep)
 
-    create_configfiles(be_id)
+    create_configfile(be_id)
     return ep_list
+
+
+def configs_to_backend(file_paths, name):
+
+    backend = Backend(None, name=name, url="", openapi="")
+
+    db.session.add(backend)
+
+    for file in file_paths:
+        config_json = read_configfile(file)
+        backend.append_config(config_json)
+
+    return backend
 
 
 def read_result(be_id):
@@ -153,23 +176,23 @@ def read_result(be_id):
     time.sleep(1)
     backend = Backend.query.filter(Backend.id == be_id).first()
 
-    if backend.get_output() == "result_None.json":
-        backend.set_output("result_{}.json".format(backend.id))
-        # db.session.commit()
+    if backend.output == "result_None.json":
+        backend.output = "result_{}.json".format(backend.id)
+        db.session.commit()
 
-    result_path = "{}/{}".format(WORKING_DIR, backend.get_output())
+    result_path = "{}/{}".format(WORKING_DIR, backend.output)
 
     if os.path.isfile(result_path):
-        result_file = open("{}/{}".format(WORKING_DIR, backend.get_output()), "r")
+        result_file = open("{}/{}".format(WORKING_DIR, backend.output), "r")
 
         result = json.loads(result_file.read())
 
-        result_list = []
+        # result_list = []
+        #
+        # for key, val in result.items():
+        #     result_list.append(Result(key, val))
 
-        for key, val in result.items():
-            result_list.append(Result(key, val))
-
-        return result_list
+        return result
     return None
 
 
@@ -184,14 +207,11 @@ def run_validation(be_id):
     """
     # config_path = create_configfile(be_id)
 
-    backend = Backend.query.filter(Backend.id == be_id).first()
+    config_path = "config_{}.toml".format(str(be_id))
 
-    cmd = ['./openeoct', 'config']
+    config_path = os.getcwd() + "/" + config_path
 
-    for config in backend.configs:
-        config_path = "config_{}.toml".format(str(config.id))
-        config_path = os.getcwd() + "/" + config_path
-        cmd.append(config_path)
+    cmd = ['./openeoct', 'config', config_path]
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=WORKING_DIR)
 
@@ -199,6 +219,24 @@ def run_validation(be_id):
     print(err)
     if len(err) != 0:
         return ["Error executing the openeoct command"]
+
+    return read_result(be_id)
+
+
+def run_validation_deliverable(be_id):
+
+    deliverable_path = app.config["D28_Folder"]
+    be_config_path = os.path.join(deliverable_path, "src", "openeo_d28", "D28_config_{}.toml".format(be_id))
+    ep_config_path = os.path.join(deliverable_path, "src", "openeo_d28", "openeo_v1.0_endpoints.toml")
+
+    cmd = ['./openeoct', 'config', be_config_path, ep_config_path]
+
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=WORKING_DIR)
+
+    out, err = p.communicate()
+    print(err)
+    if len(err) != 0:
+        return str(err)
 
     return read_result(be_id)
 
@@ -243,3 +281,46 @@ def get_pytest_static_path(be_id):
     #result_path = os.path.join(PYTEST_DIR, "static/report_{}.html".format(be_id))
     #result_path = os.path.abspath(result_path)
     return result_path
+
+
+class BodyHandler:
+    """
+    Result class that contains all information related to an result of an validation.
+    """
+    basedir = app.config['BODY_PATH']
+
+    def load_bodies(self):
+        bodies = {}
+        body_files = self.get_bodies_files()
+
+        for b_file in body_files:
+            bodies[b_file] = self.read_body(b_file)
+        return bodies
+
+    def get_bodies_files(self):
+        return [f for f in os.listdir(self.basedir) if os.path.isfile(os.path.join(self.basedir, f))]
+
+    def read_body(self, name):
+        try:
+            with open(os.path.join(self.basedir, name)) as file:
+                value = file.read()
+                file.close()
+            return value
+        except:
+            return "Body file not found!"
+
+    def write_body(self, value, name=None):
+        if not name:
+            name = uuid.uuid4().hex[:6].upper()
+        f = open(os.path.join(self.basedir, name), "w")
+        f.write(value)
+        f.close()
+
+    def transfer_body(self, orig_file, name):
+        with open(orig_file) as file:
+            value = file.read()
+            file.close()
+        self.write_body(value, name=name)
+
+    def get_abs_path(self, name):
+        return os.path.join(os.getcwd(), self.basedir, name)

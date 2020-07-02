@@ -713,7 +713,7 @@ func (ct *ComplianceTest) appendConfig(config Config) {
 
 // Main function
 func main() {
-
+	start_time := time.Now()
 	// Config file path
 	//var config Config
 	//var config_ep Config
@@ -776,7 +776,7 @@ func main() {
 
 	// config file read correctly
 	if ct.backend.url == "" {
-		log.Println("Error: No config file or backend url specified")
+		log.Fatal("Error: No config file or backend url specified")
 	}
 
 	// Run validation
@@ -786,23 +786,34 @@ func main() {
 		log.Println(err.toString())
 	}
 
-	var result_json map[string](map[string]interface{})
-	result_json = make(map[string](map[string]interface{}))
+	end_time := time.Now()
+
+	var result_json map[string](map[string](map[string]interface{}))
+	result_json = make(map[string](map[string](map[string]interface{})))
+	result_json["result"] = make(map[string](map[string]interface{}))
+	result_json["stats"] = make(map[string](map[string]interface{}))
+	result_json["stats"]["backend"] = make(map[string]interface{})
+	result_json["stats"]["execution"] = make(map[string]interface{})
+	result_json["stats"]["backend"]["url"] = ct.backend.url
+	result_json["stats"]["backend"]["baseurl"] = ct.backend.baseurl
+	result_json["stats"]["backend"]["version"] = ct.backend.version
+	result_json["stats"]["execution"]["start"] = start_time.Format("2006-01-02 15:04:05")
+	result_json["stats"]["execution"]["end"] = end_time.Format("2006-01-02 15:04:05")
 
 	for group, endpoints := range ct.endpoints {
 		for _, ep := range endpoints {
 			ep.loadVariablesToEndpoint(*ct)
-			if result_json[group] == nil {
-				result_json[group] = make(map[string]interface{})
-				result_json[group]["group_summary"] = "Valid"
-				result_json[group]["endpoints"] = make(map[string](map[string]string))
+			if result_json["result"][group] == nil {
+				result_json["result"][group] = make(map[string]interface{})
+				result_json["result"][group]["group_summary"] = "Valid"
+				result_json["result"][group]["endpoints"] = make(map[string](map[string]string))
 			}
 
-			result_json[group]["endpoints"].(map[string](map[string]string))[ep.Id] = result[ep.Id]
-			result_json[group]["endpoints"].(map[string](map[string]string))[ep.Id]["url"] = ep.Url
-			result_json[group]["endpoints"].(map[string](map[string]string))[ep.Id]["type"] = ep.Request_type
+			result_json["result"][group]["endpoints"].(map[string](map[string]string))[ep.Id] = result[ep.Id]
+			result_json["result"][group]["endpoints"].(map[string](map[string]string))[ep.Id]["url"] = ep.Url
+			result_json["result"][group]["endpoints"].(map[string](map[string]string))[ep.Id]["type"] = ep.Request_type
 			if result[ep.Id]["state"] != "Valid" && result[ep.Id]["state"] != "Missing" {
-				result_json[group]["group_summary"] = "Invalid"
+				result_json["result"][group]["group_summary"] = "Invalid"
 			}
 		}
 	}

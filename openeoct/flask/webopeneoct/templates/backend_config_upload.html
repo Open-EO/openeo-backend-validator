@@ -3,11 +3,7 @@
 <head>
  <meta charset="UTF-8">
 
-  {% if form.id %}
-  <title>Update Endpoint</title>
-  {% else %}
-  <title>Register Endpoint</title>
-  {% endif %}
+  <title>Register Backend</title>
 
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
 <style>
@@ -31,32 +27,24 @@
 
 {% from "_formhelpers.html" import render_field %}
 <div class="container">
-
     <div class="row">
-        <h3>Create Endpoint</h3>
 <form method="post", enctype = "multipart/form-data">
   <dl>
-      {{ render_field(form.id) }}
-    {{ render_field(form.backend) }}
-    {{ render_field(form.url) }}
-    {{ render_field(form.type) }}
-      <dt><label>Upload body from file</label>
-      <dd><input type = "file" name = "file"/> </dd>
-      {{ render_field(form.body) }}
-      {{ render_field(form.optional) }}
-      {{ render_field(form.group) }}
-      {{ render_field(form.timeout) }}
-      {{ render_field(form.order) }}
+    <dt><label for="name">Name</label>
+        <dd><input id="name" name="name" type="text" value="{{ name }}"> </dd>
+      {% if warning_message %}
+        <dt><label style="color:red;">{{ warning_message }}</label>
+      {% endif %}
+      <dt><label>Configfiles</label>
+      <dd><input class="btn btn-primary" type = "file" name = "file" accept=".json, .toml" multiple/> </dd>
   </dl>
-            <div class="row">
+        <div class="row">
     <hr>
 </div>
-  <p><input class="btn btn-success" type=submit value=Submit>
+  <p><input class="btn btn-success"type=submit value=Create>
 
   <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
-  <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_edit', be_id=form.backend.data) }}';">Backend</button>
-</form>
-        </div>
-    </div>
+</form></div>
+</div>
 </body>
 </html>

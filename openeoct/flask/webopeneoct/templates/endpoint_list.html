@@ -24,33 +24,38 @@
     </head>
 
     <body>
+    <div class="container">
+        <div class="row">
 <table class="table table-condensed" id="backendlist">
         <thead>
           <tr>
             <th>Backend</th>
             <th>URL</th>
-            <th>Type</th>
-            <th>Body</th>
-              <th>Head</th>
-              <th>Auth</th>
+            <th>Method</th>
               <th>Edit</th>
+              <th>Delete</th>
           </tr>
         </thead>
         <tbody>
             {% for endpoint in endpoints %}
             <tr>
-                <td><button type="button" onclick="window.location.href='{{ url_for( 'backend_edit', be_id=endpoint.backend) }}';">{{ endpoint.backend }}</button></td>
+                <td><button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for( 'backend_edit', be_id=endpoint.backend) }}';">{{ endpoint.backend }}</button></td>
                 <td>{{ endpoint.url }}</td>
                 <td>{{ endpoint.type }}</td>
-                <td> - </td>
-                <td> - </td>
-                <td> - </td>
-                <td><button type="button" onclick="window.location.href='{{ url_for( 'endpoint_register', ep_id=endpoint.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
+                <td><button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for( 'endpoint_register', ep_id=endpoint.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
+                <td><button class="btn btn-danger" type="button" onclick="window.location.href='{{ url_for('backend_del_endpoint', ep_id=endpoint.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
             </tr>
             {% endfor %}
         </tbody>
 </table>
-    <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+        </div>
+                <div class="row">
+    <hr>
+</div>
+        <div class="row">
+    <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+    </div>
+        </div>
     </body>
 </html>
 

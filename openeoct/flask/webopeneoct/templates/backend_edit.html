@@ -31,21 +31,58 @@
 
 {% from "_formhelpers.html" import render_field %}
 <form method=post>
-  <dl>
+  <div class="container">
+
+      <div class="row">
+          <h2>Backend</h2>
     {{ render_field(form.name) }}
     {{ render_field(form.url) }}
+      {{ render_field(form.version) }}
     {{ render_field(form.openapi) }}
-    {{ render_field(form.version) }}
       {{ render_field(form.username) }}
       {{ render_field(form.password) }}
+          </div>
+      <div class="row">
+    <hr>
+</div>
 
-      <dt><label>Endpoints</label>
-          {% if endpoints %}
-            <table class="table table-condensed" id="endpointlist">
+<div class="row">
+            <dt><h2>Variables</h2>
+
+            <table class="table table-condensed" id="variablelist">
         <thead>
           <tr>
-            <th>URL</th>
-            <th>Type</th>
+            <th>Name</th>
+            <th>Value</th>
+              <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+                {% for variable in variables %}
+                <tr>
+                    <td><div>{{ variable.name }}</div></td>
+                    <td><div>{{ variable.value }}</div></td>
+                    <td><button class="btn btn-danger" type="button" onclick="window.location.href='{{ url_for('backend_del_variable', va_id=variable.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
+                </tr>
+                {% endfor %}
+
+        </tbody>
+</table>
+<dd><button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_add_variable', be_id=form.id.data) }}';">Add Variable <span class="glyphicon glyphicon-plus"></span></button>
+<div class="row">
+    <hr>
+</div>
+</div><div class="row">
+      <dt><h2>Endpoints</h2>
+          {% if endpoints %}
+            <table class="table table-condensed" id="backendlist">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Path</th>
+              <th>Method</th>
+              <th>Order</th>
+              <th>Group</th>
               <th>Edit</th>
               <th>Delete</th>
           </tr>
@@ -54,10 +91,13 @@
 
                 {% for endpoint in endpoints %}
                 <tr>
+                    <td>{{ endpoint.id }}</td>
                     <td>{{ endpoint.url }}</td>
                     <td>{{ endpoint.type }}</td>
-                    <td><button type="button" onclick="window.location.href='{{ url_for( 'endpoint_register', ep_id=endpoint.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
-                    <td><button type="button" onclick="window.location.href='{{ url_for('backend_del_endpoint', ep_id=endpoint.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
+                    <td>{{ endpoint.order }}</td>
+                    <td>{{ endpoint.group }}</td>
+                    <td><button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for( 'endpoint_register', ep_id=endpoint.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
+                    <td><button class="btn btn-danger" type="button" onclick="window.location.href='{{ url_for('backend_del_endpoint', ep_id=endpoint.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
                 </tr>
                 {% endfor %}
 
@@ -65,79 +105,34 @@
 </table>
       {% endif %}
       {% if form.id.data %}
-        <dd><button type="button" onclick="window.location.href='{{ url_for('backend_add_endpoint', be_id=form.id.data) }}';">Add Endpoint <span class="glyphicon glyphicon-plus"></span></button>
-        <dd><button type="button" onclick="window.location.href='{{ url_for('backend_gen_get_endpoints', be_id=form.id.data) }}';">Generate GET Endpoints <span class="glyphicon glyphicon-plus"></span></button>
-        <dd><button type="button" onclick="window.location.href='{{ url_for('backend_gen_all_endpoints', be_id=form.id.data) }}';">Generate ALL Endpoints <span class="glyphicon glyphicon-plus"></span></button>
+          {% if warning_message %}
+        <label style="color:red;">{{ warning_message }}</label>
       {% endif %}
+      <div class="input-group">
 
-    <dt><label>Variables</label>
-          {% if variables %}
-            <table class="table table-condensed" id="variableslist">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Value</th>
-              <th>Edit</th>
-              <th>Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-
-                {% for variable in variables %}
-                <tr>
-                    <td>{{ variable.name }}</td>
-                    <td>{{ variable.value }}</td>
-                    <td><button type="button" onclick="window.location.href='{{ url_for( 'variable_register', var_id=variable.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
-                    <td><button type="button" onclick="window.location.href='{{ url_for('backend_del_variable', var_id=variable.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
-                </tr>
-                {% endfor %}
-
-        </tbody>
-</table>
+        <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_add_endpoint', be_id=form.id.data) }}';">Add Endpoint <span class="glyphicon glyphicon-plus"></span></button>
+        <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_gen_get_endpoints', be_id=form.id.data) }}';">Generate GET Endpoints <span class="glyphicon glyphicon-plus"></span></button>
+        <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('backend_gen_all_endpoints', be_id=form.id.data) }}';">Generate ALL Endpoints <span class="glyphicon glyphicon-plus"></span></button>
+        </div>
       {% endif %}
-      {% if form.id.data %}
-        <dd><button type="button" onclick="window.location.href='{{ url_for('backend_add_variable', be_id=form.id.data) }}';">Add Variable <span class="glyphicon glyphicon-plus"></span></button>
-      {% endif %}
-
-          <dt><label>Configuration Files</label>
-          {% if configs %}
-            <table class="table table-condensed" id="configlist">
-        <thead>
-          <tr>
-            <th>File</th>
-              <th>Edit</th>
-              <th>Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-
-                {% for config in configs %}
-                <tr>
-                    <td>{{ config.name }}</td>
-                    <td><button type="button" onclick="window.location.href='{{ url_for( 'config_register', var_id=variable.id ) }}';"><span class="glyphicon glyphicon-pencil"></span></button></td>
-                    <td><button type="button" onclick="window.location.href='{{ url_for('backend_del_config', var_id=variable.id) }}';"><span class="glyphicon glyphicon-trash"></span></button></td>
-                </tr>
-                {% endfor %}
-
-        </tbody>
-</table>
-      {% endif %}
-      {% if form.id.data %}
-        <dd><button type="button" onclick="window.location.href='{{ url_for('backend_add_config', be_id=form.id.data) }}';">Add Config <span class="glyphicon glyphicon-plus"></span></button>
-      {% endif %}
-
-  </dl>
-
+</div>
+<div class="row">
+    <hr>
+</div>
+<div class="row">
   {% if form.id.data %}
-  <p><input type=submit value=Update>
+  <p><input class="btn btn-success" type=submit value=Update>
   {% else %}
-  <p><input type=submit value=Register>
+  <p><input class="btn btn-success" type=submit value=Register>
   {% endif %}
-  <button type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
+  <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for('home') }}';"><span class="glyphicon glyphicon-home"></span></button>
     {% if form.id.data %}
-  <button type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
-    <button type="button" onclick="window.location.href='{{ url_for( 'backend_download', be_id=form.id.data ) }}';">Download</button>
+    <button class="btn btn-info" type="button" onclick="window.location.href='{{ url_for( 'backend_validate', be_id=form.id.data ) }}';">Validate</button>
+    <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for( 'backend_download', be_id=form.id.data ) }}';">Download</button>
+    <button class="btn btn-primary" type="button" onclick="window.location.href='{{ url_for( 'backend_register_cfg', be_id=form.id.data ) }}';">Append Configfile</button>
     {% endif %}
+</div>
+      </div>
 </form>
 
 </body>
