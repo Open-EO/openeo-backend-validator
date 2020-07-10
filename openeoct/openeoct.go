@@ -365,22 +365,22 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 		return "Error", errReq
 	}
 
-	if ct.debug == true {
-		log.Println("---Request---")
-		log.Println("URL: ", string(httpReq.URL.RequestURI()))
-		log.Println("Method: ", httpReq.Method)
-		jsonString, _ := json.Marshal(httpReq.Header)
-		log.Println("Header: ", string(jsonString))
-		if httpReq.Body != nil {
-			reqbody, _ := ioutil.ReadAll(httpReq.Body)
-			log.Println("Body: ", string(reqbody))
-			stringReader := strings.NewReader(string(reqbody))
-			stringReadCloser := ioutil.NopCloser(stringReader)
-			httpReq.Body = stringReadCloser
-		} else {
-			log.Println("Body: Empty")
-		}
-	}
+	// if ct.debug == true {
+	// 	log.Println("---Request---")
+	// 	log.Println("URL: ", string(httpReq.URL.RequestURI()))
+	// 	log.Println("Method: ", httpReq.Method)
+	// 	jsonString, _ := json.Marshal(httpReq.Header)
+	// 	log.Println("Header: ", string(jsonString))
+	// 	if httpReq.Body != nil {
+	// 		reqbody, _ := ioutil.ReadAll(httpReq.Body)
+	// 		log.Println("Body: ", string(reqbody))
+	// 		stringReader := strings.NewReader(string(reqbody))
+	// 		stringReadCloser := ioutil.NopCloser(stringReader)
+	// 		httpReq.Body = stringReadCloser
+	// 	} else {
+	// 		log.Println("Body: Empty")
+	// 	}
+	// }
 
 	// Find route in openAPI definition
 	route, pathParams, err := router.FindRoute(httpReq.Method, httpReq.URL)
@@ -432,6 +432,23 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 
 	// execReq, errReq := httpReq, err ct.buildRequest(endpoint, token, true)
 	execReq, errReq := ct.buildRequest(endpoint, token, true)
+
+	if ct.debug == true {
+		log.Println("---Request---")
+		log.Println("URL: ", string(execReq.URL.RequestURI()))
+		log.Println("Method: ", execReq.Method)
+		jsonString, _ := json.Marshal(execReq.Header)
+		log.Println("Header: ", string(jsonString))
+		if execReq.Body != nil {
+			reqbody, _ := ioutil.ReadAll(execReq.Body)
+			log.Println("Body: ", string(reqbody))
+			stringReader := strings.NewReader(string(reqbody))
+			stringReadCloser := ioutil.NopCloser(stringReader)
+			execReq.Body = stringReadCloser
+		} else {
+			log.Println("Body: Empty")
+		}
+	}
 
 	if errReq != nil {
 		return "Error", errReq
