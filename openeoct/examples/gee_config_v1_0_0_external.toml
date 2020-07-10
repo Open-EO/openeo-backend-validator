@@ -32,17 +32,23 @@ password="test123"
   [endpoints.post_jobs_1]
   url = "/jobs"
   request_type = "POST"
-  body = "examples/body/processgraph_endpoint_gee"
+  body = "examples/body/foobar"
   timeout = 20
   group = "capabilities2"
   order = 1
 
-  [endpoints.get_jobs_2]
-  url = "/jobs/{job_id}"
-  request_type = "GET"
-  optional = false
-  group = "capabilities2"
-  order = 2
+#  [endpoints.start_jobs]
+#  url = "/jobs/{job_id}/results"
+#  request_type = "POST"
+#  group = "capabilities2"
+#  order = 2
+
+#  [endpoints.get_jobs_2]
+#  url = "/jobs/{job_id}/results"
+#  request_type = "GET"
+#  group = "capabilities2"
+#  retrycode = "JobNotFinished"
+#  order = 3
 
 #  [endpoints.capabilities_2]
 #  url = "{test}"
@@ -61,10 +67,9 @@ password="test123"
 #  request_type = "GET"
 #  group = "capabilities"
 
-#  [endpoints.endpoint6]
-#  id = "/services"
-#  url = "/services"
-#  request_type = "GET"
+#[endpoints.processes]
+#url = "/processes"
+#request_type = "GET"
 
 #  [endpoints.endpoint9]
 #  id = "me"

@@ -9,7 +9,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -54,6 +56,8 @@ type Endpoint struct {
 	Optional     bool
 	Group        string
 	Timeout      int
+	Wait         int
+	RetryCode    string
 	Order        int
 	// Add auth and that stuff
 }
@@ -104,6 +108,13 @@ type Config struct {
 	Backendversion string
 }
 
+func build_url(base string, ep string) string {
+	u, _ := url.Parse(base)
+	u.Path = path.Join(u.Path, ep)
+	//log.Println(u.String())
+	return u.String()
+}
+
 // Validates all enpoints defined in the compliance test instance.
 // Returns a map of strings containing the states of the validation results
 func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorMessage) {
@@ -119,12 +130,12 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 
 		client := &http.Client{}
 
-		httpReq, _ := http.NewRequest(http.MethodGet, ct.backend.url+ct.authendpoint, nil)
+		httpReq, _ := http.NewRequest(http.MethodGet, build_url(ct.backend.url, ct.authendpoint), nil)
 		httpReq.SetBasicAuth(ct.username, ct.password)
 		resp, errResp := client.Do(httpReq)
 
 		if errResp != nil {
-			authentication_err.input = string(ct.backend.url + ct.authendpoint)
+			authentication_err.input = build_url(ct.backend.url, ct.authendpoint)
 			authentication_err.msg = "Error calling the authentication url! Wrong credentials?"
 			authentication_err.output = string(errResp.Error())
 
@@ -135,7 +146,7 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 			token, _ = m["access_token"].(string)
 			authentication_err = nil
 		} else {
-			authentication_err.input = string(ct.backend.url + ct.authendpoint)
+			authentication_err.input = build_url(ct.backend.url, ct.authendpoint)
 			authentication_err.msg = "Error calling the authentication url! Wrong credentials?"
 			authentication_err.output = ""
 		}
@@ -149,7 +160,20 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 		for _, endpoint := range endpoints {
 			//log.Println("Group: " + group + ", Endpoint: " + endpoint.Id)
 			endpoint.loadVariablesToEndpoint(*ct)
+			counter := 0 // max tries are 10
 			state, err := ct.validate(endpoint, token)
+			if state == "Retry" {
+
+				for counter < 10 {
+
+					state, err = ct.validate(endpoint, token)
+					if state != "Retry" {
+						break
+					}
+					time.Sleep(2 * time.Second)
+					counter++
+				}
+			}
 			states[endpoint.Id] = make(map[string]string)
 			states[endpoint.Id]["state"] = state
 
@@ -163,6 +187,7 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 			} else {
 				states[endpoint.Id]["message"] = ""
 			}
+			time.Sleep(time.Duration(endpoint.Wait) * time.Second)
 		}
 	}
 	return states, authentication_err
@@ -219,10 +244,10 @@ func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url 
 
 	if abs_url == true {
 		if strings.Contains(endpoint.Url, ".well-known") {
-			httpReq, _ = http.NewRequest(method, ct.backend.baseurl+endpoint.Url, nil)
+			httpReq, _ = http.NewRequest(method, build_url(ct.backend.baseurl, endpoint.Url), nil)
 			return httpReq, nil
 		} else {
-			httpReq, _ = http.NewRequest(method, ct.backend.url+endpoint.Url, nil)
+			httpReq, _ = http.NewRequest(method, build_url(ct.backend.url, endpoint.Url), nil)
 		}
 	}
 
@@ -349,6 +374,9 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 		if httpReq.Body != nil {
 			reqbody, _ := ioutil.ReadAll(httpReq.Body)
 			log.Println("Body: ", string(reqbody))
+			stringReader := strings.NewReader(string(reqbody))
+			stringReadCloser := ioutil.NopCloser(stringReader)
+			httpReq.Body = stringReadCloser
 		} else {
 			log.Println("Body: Empty")
 		}
@@ -466,6 +494,12 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 		errormsg.input = endpoint.Url
 		errormsg.msg = "Response Code " + strconv.Itoa(resp.StatusCode)
 		errormsg.output = string(body)
+		if endpoint.RetryCode != "" {
+			if strings.Contains(string(body), endpoint.RetryCode) {
+				log.Println(endpoint.RetryCode)
+				return "Retry", errormsg
+			}
+		}
 		return "Error", errormsg
 	}
 
@@ -762,6 +796,7 @@ func main() {
 
 	//ct.debug = true
 	//ct.appendConfig(ReadConfig("examples/gee_config_v1_0_0_external.toml"))
+	//ct.debug = true
 	//ct.appendConfig(ReadConfig("examples/eodc_config_v1_0.toml"))
 	// ct.appendConfig(ReadConfig(c.Args().Get(i)))
 	//config = ReadConfig("examples/gee_config_v1_0.json")

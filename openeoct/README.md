@@ -128,6 +128,14 @@ In the config file all endpoints need to be defined after the [endpoints] sectio
 
 `order = 1` 
 
+* *wait* - Integer of seconds the validator will wait after the endpoint got validated.
+
+`wait = 10` 
+
+* *retrycode* - String or openEO Error Response Code, on which occurance the validator will wait 2 seconds and try validating the endpoint again (max 10 times).  
+
+`retrycode = "JobNotFinished"` 
+
 The complete endpoints section in the config file looks similar to:
 ```
 [endpoints]
