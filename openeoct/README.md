@@ -226,7 +226,7 @@ password="test123"
   request_type = "{test2}"
 ```
 
-### JSON Output
+### Validation Report
 
 The output is a JSON object containing the state "Valid" for every endpoint that is valid against the openapi specification, 
 "Invalid" for every endpoint that is invalid with an error message with further information or with the state "Error" 
@@ -265,9 +265,18 @@ Example output:
                 "state": "Valid",
                 "type": "GET",
                 "url": "/collections/FIRMS"
-            },
+            }
         },
         "group_summary": "Invalid"
     }
 }
 ```
+
+To make it a bit easier to review this report, there is a
+simple python script `json2html.py` to convert this JSON
+to a HTML report, which you can open in a web browser:
+
+    ./json2html.py output.json report.html
+
+If you don't specify input JSON file and output HTML file,
+this tool reads from standard input and writes to standard output.
