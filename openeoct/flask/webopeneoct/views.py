@@ -415,8 +415,8 @@ def backend_validate_deliverable_edit(be_id):
         if "pre_job_id" in req_form:
             be_conf_json["variables"]["job_id_precomputed"] = req_form["pre_job_id"]
 
-        if "col_id" in req_form:
-            be_conf_json["variables"]["col_id"] = req_form["col_id"]
+        if "collection_id" in req_form:
+            be_conf_json["variables"]["collection_id"] = req_form["collection_id"]
 
         write_configfile(be_conf_json, be_config_path)
 
@@ -442,19 +442,19 @@ def backend_validate_deliverable_edit(be_id):
 
     udp_name = "DEFAULT"
     pre_job_id = "DEFAULT"
-    col_id = "Sentinel-2"
+    collection_id = "Sentinel-2"
     if os.path.isfile(be_config_path):
         be_conf_json = read_configfile(be_config_path)
         udp_name = be_conf_json["variables"]["process_graph_id"]
         pre_job_id = be_conf_json["variables"]["job_id_precomputed"]
-        if "col_id" in be_conf_json["variables"]:
-            col_id = be_conf_json["variables"]["col_id"]
+        if "collection_id" in be_conf_json["variables"]:
+            collection_id = be_conf_json["variables"]["collection_id"]
 
     config_created = os.path.isfile(be_config_path)
 
     return render_template('backend_deliverable.html', form=form, udp_value=udp_value, config_created=config_created,
                            job_value=job_value, job_sync_value=job_sync_value, udp_name=udp_name, pre_job_id=pre_job_id,
-                           col_id=col_id, service_value=service_value)
+                           collection_id=collection_id, service_value=service_value)
 
 
 @app.route('/backend/validate/deliverable/<be_id>', methods=['GET', 'POST'])

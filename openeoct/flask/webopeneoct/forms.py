@@ -149,6 +149,8 @@ class EndpointForm(Form):
     group = StringField('Group')
     timeout = IntegerField('Timeout')
     order = IntegerField('Order')
+    wait = IntegerField('Seconds to wait after endpoint validation')
+    retry = StringField('Retry validation as long as openEO error code occurs (e.g. JobNotFinished)')
 
     def __init__(self, *args, **kwargs):
         """
@@ -195,6 +197,15 @@ class EndpointForm(Form):
             self.order.data = 0
         else:
             self.order.data = endpoint.order
+        if not endpoint.wait:
+            self.wait.data = 0
+        else:
+            self.wait.data = endpoint.wait
+        if not endpoint.retry:
+            self.retry.data = ""
+        else:
+            self.retry.data = endpoint.retry
+
         self.id.data = endpoint.id
 
         if endpoint.body:
@@ -217,7 +228,8 @@ class EndpointForm(Form):
                Endpoint instance with values of the form.
         """
         ep = Endpoint(self.backend.data, self.url.data, self.type.data, optional=self.optional.data,
-                 group=self.group.data, timeout=self.timeout.data, order=self.order.data, id=self.id.data)
+                 group=self.group.data, timeout=self.timeout.data, order=self.order.data, id=self.id.data,
+                 wait=self.wait.data, retry=self.retry.data)
         if self.body.data:
             ep.body = "body_{}_{}".format(str(self.backend.data), self.id.data)
         return ep

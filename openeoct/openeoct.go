@@ -46,6 +46,17 @@ type WellKnown struct {
 	versions []map[string]string
 }
 
+// CapEndpoints helper"class"
+type CapEndpoint struct {
+	Path    string
+	Methods []string
+}
+
+// Capabilities helper"class"
+type Capability struct {
+	Endpoints []CapEndpoint
+}
+
 // Endpoint "class"
 type Endpoint struct {
 	Id           string
@@ -92,6 +103,7 @@ type ComplianceTest struct {
 	output       string
 	debug        bool
 	router       *openapi3filter.Router
+	capabilities Capability
 }
 
 // Elements of the Config file
@@ -157,7 +169,15 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 	for _, endpoints := range ct.endpoints {
 		//Sorting within the group
 		sort.Sort(ByOrder(endpoints))
+
 		for _, endpoint := range endpoints {
+			if ct.checkCapability(endpoint) != true {
+				states[endpoint.Id] = make(map[string]string)
+				states[endpoint.Id]["message"] = "Endpoint skipped, not listed in backend capabilities"
+				states[endpoint.Id]["state"] = "NotSupported"
+				//log.Println("Endpoint missing: " + endpoint.Id)
+				continue
+			}
 			//log.Println("Group: " + group + ", Endpoint: " + endpoint.Id)
 			endpoint.loadVariablesToEndpoint(*ct)
 			counter := 0 // max tries are 10
@@ -513,7 +533,7 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 		errormsg.output = string(body)
 		if endpoint.RetryCode != "" {
 			if strings.Contains(string(body), endpoint.RetryCode) {
-				log.Println(endpoint.RetryCode)
+				//log.Println(endpoint.RetryCode)
 				return "Retry", errormsg
 			}
 		}
@@ -668,6 +688,63 @@ func (be *BackEnd) loadUrl() {
 
 }
 
+func (ct *ComplianceTest) checkCapability(ep Endpoint) bool {
+	//log.Println("Start endpoint: " + ep.Url + " Method:" + ep.Request_type)
+	for _, cap_ep := range ct.capabilities.Endpoints {
+		re := regexp.MustCompile(`^` + cap_ep.Path + `$`)
+		if re.MatchString(ep.Url) {
+			//if ep.Url != "/" && cap_ep.Path == "/" {
+			//	continue
+			//}
+			//	log.Println("URL Match: " + ep.Url + " Regex: " + cap_ep.Path)
+			for _, met := range cap_ep.Methods {
+				//log.Println("Compare Method: " + ep.Request_type + " Regex: " + met)
+				if met == ep.Request_type {
+					return true
+				}
+			}
+		} else {
+			//log.Println("Not a match: ^" + cap_ep.Path + "$ Regex with " + ep.Url)
+		}
+	}
+	//log.Println("Endpoint not found: " + ep.Url + " Method:" + ep.Request_type)
+	return false
+}
+func (ct *ComplianceTest) loadCapabilities() {
+
+	// Get backend capabilities
+	well_known := ct.backend.url + "/"
+	client := &http.Client{}
+	httpReq, _ := http.NewRequest(http.MethodGet, well_known, nil)
+	resp, _ := client.Do(httpReq)
+
+	//buf := new(bytes.Buffer)
+	//buf.ReadFrom(resp.Body)
+	//newStr := buf.String()
+	//log.Println(newStr)
+
+	dec := json.NewDecoder(resp.Body)
+	dec.DisallowUnknownFields()
+	// buf := new(bytes.Buffer)
+	// buf.ReadFrom(resp.Body)
+	// newStr := buf.String()
+
+	var capa Capability
+	dec.Decode(&capa)
+
+	r := regexp.MustCompile(`{[^{}]*}`)
+	//log.Println(capa)
+
+	for i, _ := range capa.Endpoints {
+		//log.Println(cap_ep.Path)
+		//log.Println(r.ReplaceAllLiteralString(cap_ep.Path, `(.*)`))
+		capa.Endpoints[i].Path = r.ReplaceAllLiteralString(capa.Endpoints[i].Path, `[^/]*`)
+	}
+
+	ct.capabilities = capa
+
+}
+
 func (ct *ComplianceTest) appendConfig(config Config) {
 
 	if config.Config != "" {
@@ -760,6 +837,7 @@ func (ct *ComplianceTest) appendConfig(config Config) {
 
 		ct.endpoints = ep_groups
 	}
+	ct.loadCapabilities()
 }
 
 // Main function
@@ -864,7 +942,7 @@ func main() {
 			result_json["result"][group]["endpoints"].(map[string](map[string]string))[ep.Id] = result[ep.Id]
 			result_json["result"][group]["endpoints"].(map[string](map[string]string))[ep.Id]["url"] = ep.Url
 			result_json["result"][group]["endpoints"].(map[string](map[string]string))[ep.Id]["type"] = ep.Request_type
-			if result[ep.Id]["state"] != "Valid" && result[ep.Id]["state"] != "Missing" {
+			if result[ep.Id]["state"] != "Valid" && result[ep.Id]["state"] != "Missing" && result[ep.Id]["state"] != "NotSupported" {
 				result_json["result"][group]["group_summary"] = "Invalid"
 			}
 		}

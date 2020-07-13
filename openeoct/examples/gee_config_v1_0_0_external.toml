@@ -13,10 +13,38 @@ password="test123"
 [variables]
   test = "/"
   test2 = "GET"
-  test3 = "FIRMS"
-  gee_graph = "processgraph_endpoint_gee"
+  filepath = "FIRMS"
+  file_filename = "processgraph_endpoint_gee"
 
 [endpoints]
+
+  # File Storage
+  # https://openeo.org/documentation/1.0/developers/api/reference.html#tag/File-Storage
+  [endpoints.files]
+  url = "/files"
+  request_type = "GET"
+  group = "File Storage"
+  order = 2
+
+  [endpoints.files_put]
+  url = "/files/{filepath}"
+  request_type = "PUT"
+  group = "File Storage"
+  body = "body/{file_filename}"
+  order = 1
+  
+  [endpoints.files_filepath]
+  url = "/files/{filepath}"
+  request_type = "GET"
+  group = "File Storage"
+  order = 2
+
+  [endpoints.files_delete]
+  url = "/files/{filepath}"
+  request_type = "DELETE"
+  group = "File Storage"
+  order = 3
+
 
 #  [endpoints.runtimes_None]
 #  url = "/udf_runtimes"
@@ -29,13 +57,13 @@ password="test123"
 #  group = "capabilities"
 #  order = 99
 
-  [endpoints.post_jobs_1]
-  url = "/jobs"
-  request_type = "POST"
-  body = "examples/body/foobar"
-  timeout = 20
-  group = "capabilities2"
-  order = 1
+#  [endpoints.post_jobs_1]
+#  url = "/jobs"
+#  request_type = "POST"
+#  body = "examples/body/foobar"
+#  timeout = 20
+#  group = "capabilities2"
+#  order = 1
 
 #  [endpoints.start_jobs]
 #  url = "/jobs/{job_id}/results"

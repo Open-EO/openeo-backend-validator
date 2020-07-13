@@ -189,11 +189,13 @@ class Endpoint(db.Model):
     group = db.Column(db.String, primary_key=True)
     timeout = db.Column(db.Integer)
     order = db.Column(db.Integer)
+    wait = db.Column(db.Integer)
+    retry = db.Column(db.String)
 
     backend = db.Column(db.Integer, db.ForeignKey('backend.id'), primary_key=True)
 
     def __init__(self, backend, url, type, id=None, body=None, head=None, auth=None, optional=False,
-                 group="nogroup", timeout=None, order=None):
+                 group="nogroup", timeout=None, order=None, wait=None, retry=None):
         self.backend = backend
         self.id = id
         self.url = url
@@ -205,6 +207,8 @@ class Endpoint(db.Model):
         self.group = group
         self.timeout = timeout
         self.order = order
+        self.wait = wait
+        self.retry = retry
 
     def set(self, endpoint):
         """
@@ -225,6 +229,8 @@ class Endpoint(db.Model):
         self.order = endpoint.order
         if endpoint.id:
             self.id = endpoint.id
+        self.wait = endpoint.wait
+        self.retry = endpoint.retry
 
     def to_json(self):
         endpoint_dict = {
@@ -239,6 +245,10 @@ class Endpoint(db.Model):
             endpoint_dict["group"] = self.group
         if self.optional:
             endpoint_dict["optional"] = self.optional
+        if self.wait:
+            endpoint_dict["wait"] = self.wait
+        if self.retry:
+            endpoint_dict["retrycode"] = self.retry
 
         if self.body:
             abs_path = Path().absolute()
@@ -265,7 +275,10 @@ class Endpoint(db.Model):
             self.optional = ep_json["optional"]
         if "body" in ep_json:
             self.body = ep_json["body"]
-
+        if "wait" in ep_json:
+            self.wait = ep_json["wait"]
+        if "retrycode" in ep_json:
+            self.retry = ep_json["retrycode"]
 
 # class Result:
 #     """

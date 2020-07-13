@@ -58,6 +58,10 @@
                 <td><span class="glyphicon glyphicon-ok" style="color:green"></span></td>
                 {% elif ep_value["state"] == "Error"%}
                 <td><span class="glyphicon glyphicon-warning-sign" style="color:red"></span></td>
+                {% elif ep_value["state"] == "Missing"%}
+                <td><span class="glyphicon glyphicon-warning-sign" style="color:orange"></span></td>
+                {% elif ep_value["state"] == "NotSupported"%}
+                <td><span class="glyphicon glyphicon-ok" style="color:blue"></span></td>
                 {% else %}
                 <td><span class="glyphicon glyphicon-remove" style="color:red"></span></td>
                 {% endif %}
@@ -85,6 +89,8 @@
 <div class="container">
 <label>Valid: <span class="glyphicon glyphicon-ok" style="color:green"></span></label>
     <label>Invalid: <span class="glyphicon glyphicon-remove" style="color:red"></span></label>
+    <label>Missing: <span class="glyphicon glyphicon-warning-sign" style="color:orange"></span></label>
+    <label>Not Supported: <span class="glyphicon glyphicon-ok" style="color:blue"></span></label>
         <label>Error: <span class="glyphicon glyphicon-warning-sign" style="color:red"></span></label>
 </div>
 <div class="container">

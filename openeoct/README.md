@@ -230,7 +230,7 @@ password="test123"
 
 The output is a JSON object containing the state "Valid" for every endpoint that is valid against the openapi specification, 
 "Invalid" for every endpoint that is invalid with an error message with further information or with the state "Error" 
-if something went wrong during the validation process (e.g. host not reachable).
+if something went wrong during the validation process (e.g. host not reachable). If an endpoint is missing at the backend, but in the capabilities of the backend, the state is "Missing". If an endpoint is validated, which is not in the capabilties of the backend, the state is "NotSupported".
 
 Example output:
 ```json
