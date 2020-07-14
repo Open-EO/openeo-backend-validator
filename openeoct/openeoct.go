@@ -171,7 +171,7 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 		sort.Sort(ByOrder(endpoints))
 
 		for _, endpoint := range endpoints {
-			if ct.checkCapability(endpoint) != true {
+			if (ct.checkCapability(endpoint) != true) && (!strings.Contains(endpoint.Url, ".well-known")) {
 				states[endpoint.Id] = make(map[string]string)
 				states[endpoint.Id]["message"] = "Endpoint skipped, not listed in backend capabilities"
 				states[endpoint.Id]["state"] = "NotSupported"
@@ -494,7 +494,11 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 		log.Println("Header: ", string(jsonString))
 		if body != nil {
 			//reqbody, _ := ioutil.ReadAll(httpReq.Body)
-			log.Println("Body: ", string(body))
+			if len(body) < 1000 {
+				log.Println("Body: ", string(body))
+			} else {
+				log.Println("Body: Too long to be displayed")
+			}
 		} else {
 			log.Println("Body: Empty")
 		}
@@ -689,6 +693,11 @@ func (be *BackEnd) loadUrl() {
 }
 
 func (ct *ComplianceTest) checkCapability(ep Endpoint) bool {
+
+	if len(ct.capabilities.Endpoints) == 0 {
+		return true
+	}
+
 	//log.Println("Start endpoint: " + ep.Url + " Method:" + ep.Request_type)
 	for _, cap_ep := range ct.capabilities.Endpoints {
 		re := regexp.MustCompile(`^` + cap_ep.Path + `$`)
@@ -713,36 +722,44 @@ func (ct *ComplianceTest) checkCapability(ep Endpoint) bool {
 func (ct *ComplianceTest) loadCapabilities() {
 
 	// Get backend capabilities
-	well_known := ct.backend.url + "/"
-	client := &http.Client{}
-	httpReq, _ := http.NewRequest(http.MethodGet, well_known, nil)
-	resp, _ := client.Do(httpReq)
 
-	//buf := new(bytes.Buffer)
-	//buf.ReadFrom(resp.Body)
-	//newStr := buf.String()
-	//log.Println(newStr)
-
-	dec := json.NewDecoder(resp.Body)
-	dec.DisallowUnknownFields()
-	// buf := new(bytes.Buffer)
-	// buf.ReadFrom(resp.Body)
-	// newStr := buf.String()
-
-	var capa Capability
-	dec.Decode(&capa)
-
-	r := regexp.MustCompile(`{[^{}]*}`)
-	//log.Println(capa)
-
-	for i, _ := range capa.Endpoints {
-		//log.Println(cap_ep.Path)
-		//log.Println(r.ReplaceAllLiteralString(cap_ep.Path, `(.*)`))
-		capa.Endpoints[i].Path = r.ReplaceAllLiteralString(capa.Endpoints[i].Path, `[^/]*`)
+	if ct.backend.url == "" {
+		return
 	}
 
-	ct.capabilities = capa
+	capa_url := build_url(ct.backend.url, "/")
+	// log.Println(capa_url)
+	client := &http.Client{}
+	httpReq, _ := http.NewRequest(http.MethodGet, capa_url, nil)
+	resp, err := client.Do(httpReq)
 
+	//	buf := new(bytes.Buffer)
+	//	buf.ReadFrom(resp.Body)
+	//	newStr := buf.String()
+	//	log.Println(newStr)
+	if err != nil {
+
+		dec := json.NewDecoder(resp.Body)
+		dec.DisallowUnknownFields()
+
+		// buf := new(bytes.Buffer)
+		// buf.ReadFrom(resp.Body)
+		// newStr := buf.String()
+
+		var capa Capability
+		dec.Decode(&capa)
+
+		r := regexp.MustCompile(`{[^{}]*}`)
+		//log.Println(capa)
+
+		for i, _ := range capa.Endpoints {
+			//log.Println(cap_ep.Path)
+			//log.Println(r.ReplaceAllLiteralString(cap_ep.Path, `(.*)`))
+			capa.Endpoints[i].Path = r.ReplaceAllLiteralString(capa.Endpoints[i].Path, `[^/]*`)
+		}
+
+		ct.capabilities = capa
+	}
 }
 
 func (ct *ComplianceTest) appendConfig(config Config) {
@@ -837,6 +854,7 @@ func (ct *ComplianceTest) appendConfig(config Config) {
 
 		ct.endpoints = ep_groups
 	}
+
 	ct.loadCapabilities()
 }
 
@@ -891,6 +909,9 @@ func main() {
 
 	//ct.debug = true
 	//ct.appendConfig(ReadConfig("examples/gee_config_v1_0_0_external.toml"))
+	//ct.appendConfig(ReadConfig("examples/D28/openeo_v1.0_endpoints.toml"))
+	//ct.appendConfig(ReadConfig("examples/D28/GEE_config.toml"))
+
 	//ct.debug = true
 	//ct.appendConfig(ReadConfig("examples/eodc_config_v1_0.toml"))
 	// ct.appendConfig(ReadConfig(c.Args().Get(i)))
