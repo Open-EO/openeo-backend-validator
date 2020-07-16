@@ -495,9 +495,9 @@ func (ct *ComplianceTest) validate(endpoint Endpoint, token string) (string, *Er
 		if body != nil {
 			//reqbody, _ := ioutil.ReadAll(httpReq.Body)
 			if len(body) < 1000 {
-				log.Println("Body: ", string(body))
+				log.Printf("Body (length %d): %s\n", len(body), body)
 			} else {
-				log.Println("Body: Too long to be displayed")
+				log.Printf("Body (length %d): %q...\n", len(body), body[:1000])
 			}
 		} else {
 			log.Println("Body: Empty")
