@@ -120,6 +120,11 @@ type Config struct {
 	Backendversion string
 }
 
+var CAP_EXCEPTIONS = map[string]bool{
+	"/":                   true,
+	"/.well-known/openeo": true,
+}
+
 func build_url(base string, ep string) string {
 	u, _ := url.Parse(base)
 	u.Path = path.Join(u.Path, ep)
@@ -171,7 +176,7 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 		sort.Sort(ByOrder(endpoints))
 
 		for _, endpoint := range endpoints {
-			if (ct.checkCapability(endpoint) == false) && (!strings.Contains(endpoint.Url, ".well-known")) {
+			if (ct.checkCapability(endpoint) == false) && (!CAP_EXCEPTIONS[endpoint.Url]) {
 				states[endpoint.Id] = make(map[string]string)
 				states[endpoint.Id]["message"] = "Endpoint skipped, not listed in backend capabilities"
 				states[endpoint.Id]["state"] = "NotSupported"
@@ -737,6 +742,9 @@ func (ct *ComplianceTest) loadCapabilities() {
 	//	buf.ReadFrom(resp.Body)
 	//	newStr := buf.String()
 	//	log.Println(newStr)
+
+	// buf, err := os.Open("examples/eodc_main_capabilities.txt")
+
 	if err != nil {
 		return
 	}
@@ -958,15 +966,21 @@ func main() {
 			ep.loadVariablesToEndpoint(*ct)
 			if result_json["result"][group] == nil {
 				result_json["result"][group] = make(map[string]interface{})
-				result_json["result"][group]["group_summary"] = "Valid"
+				result_json["result"][group]["group_summary"] = ""
 				result_json["result"][group]["endpoints"] = make(map[string](map[string]string))
 			}
 
 			result_json["result"][group]["endpoints"].(map[string](map[string]string))[ep.Id] = result[ep.Id]
 			result_json["result"][group]["endpoints"].(map[string](map[string]string))[ep.Id]["url"] = ep.Url
 			result_json["result"][group]["endpoints"].(map[string](map[string]string))[ep.Id]["type"] = ep.Request_type
-			if result[ep.Id]["state"] != "Valid" && result[ep.Id]["state"] != "Missing" && result[ep.Id]["state"] != "NotSupported" {
+			if result[ep.Id]["state"] != "Valid" && result[ep.Id]["state"] != "NotSupported" {
 				result_json["result"][group]["group_summary"] = "Invalid"
+			} else if result[ep.Id]["state"] == "Valid" {
+				if result_json["result"][group]["group_summary"] != "Invalid" {
+					result_json["result"][group]["group_summary"] = "Valid"
+				}
+			} else if result[ep.Id]["state"] == "NotSupported" && result_json["result"][group]["group_summary"] == "" {
+				result_json["result"][group]["group_summary"] = "NotSupported"
 			}
 		}
 	}
