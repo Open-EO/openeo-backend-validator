@@ -171,7 +171,7 @@ func (ct *ComplianceTest) validateAll() (map[string](map[string]string), *ErrorM
 		sort.Sort(ByOrder(endpoints))
 
 		for _, endpoint := range endpoints {
-			if (ct.checkCapability(endpoint) != true) && (!strings.Contains(endpoint.Url, ".well-known")) {
+			if (ct.checkCapability(endpoint) == false) && (!strings.Contains(endpoint.Url, ".well-known")) {
 				states[endpoint.Id] = make(map[string]string)
 				states[endpoint.Id]["message"] = "Endpoint skipped, not listed in backend capabilities"
 				states[endpoint.Id]["state"] = "NotSupported"
@@ -738,28 +738,30 @@ func (ct *ComplianceTest) loadCapabilities() {
 	//	newStr := buf.String()
 	//	log.Println(newStr)
 	if err != nil {
-
-		dec := json.NewDecoder(resp.Body)
-		dec.DisallowUnknownFields()
-
-		// buf := new(bytes.Buffer)
-		// buf.ReadFrom(resp.Body)
-		// newStr := buf.String()
-
-		var capa Capability
-		dec.Decode(&capa)
-
-		r := regexp.MustCompile(`{[^{}]*}`)
-		//log.Println(capa)
-
-		for i, _ := range capa.Endpoints {
-			//log.Println(cap_ep.Path)
-			//log.Println(r.ReplaceAllLiteralString(cap_ep.Path, `(.*)`))
-			capa.Endpoints[i].Path = r.ReplaceAllLiteralString(capa.Endpoints[i].Path, `[^/]*`)
-		}
-
-		ct.capabilities = capa
+		return
 	}
+
+	dec := json.NewDecoder(resp.Body)
+	dec.DisallowUnknownFields()
+
+	// buf := new(bytes.Buffer)
+	// buf.ReadFrom(resp.Body)
+	// newStr := buf.String()
+
+	var capa Capability
+	dec.Decode(&capa)
+
+	r := regexp.MustCompile(`{[^{}]*}`)
+	//log.Println(capa)
+
+	for i, _ := range capa.Endpoints {
+		//log.Println(cap_ep.Path)
+		//log.Println(r.ReplaceAllLiteralString(cap_ep.Path, `(.*)`))
+		capa.Endpoints[i].Path = r.ReplaceAllLiteralString(capa.Endpoints[i].Path, `[^/]*`)
+	}
+
+	ct.capabilities = capa
+
 }
 
 func (ct *ComplianceTest) appendConfig(config Config) {
