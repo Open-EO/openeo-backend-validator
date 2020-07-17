@@ -29,7 +29,9 @@ def main(input_path=None, output_path=None):
         """)
         output.write("<body>\n")
         output.write("<dl>{ds}</dl>".format(ds="".join(
-            "<dt>{t}</dt><dd>{d}</dd>".format(t=k, d=v) for k, v in report["stats"]["backend"].items()
+            "<dt>{f}: {t}</dt><dd>{d}</dd>".format(f=f, t=k, d=v)
+            for f in ["backend", "spec"]
+            for k, v in report["stats"][f].items()
         )))
         for group_name, group in report["result"].items():
             output.write('<h1 class="state state-{s}">{g}: {s}</h1>\n'.format(g=group_name, s=group["group_summary"].lower()))
