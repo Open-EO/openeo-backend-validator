@@ -955,11 +955,13 @@ func main() {
 	result_json["stats"] = make(map[string](map[string]interface{}))
 	result_json["stats"]["backend"] = make(map[string]interface{})
 	result_json["stats"]["execution"] = make(map[string]interface{})
+	result_json["stats"]["spec"] = make(map[string]interface{})
 	result_json["stats"]["backend"]["url"] = ct.backend.url
 	result_json["stats"]["backend"]["baseurl"] = ct.backend.baseurl
 	result_json["stats"]["backend"]["version"] = ct.backend.version
 	result_json["stats"]["execution"]["start"] = start_time.Format("2006-01-02 15:04:05")
 	result_json["stats"]["execution"]["end"] = end_time.Format("2006-01-02 15:04:05")
+	result_json["stats"]["spec"]["apifile"] = ct.apifile
 
 	for group, endpoints := range ct.endpoints {
 		for _, ep := range endpoints {
