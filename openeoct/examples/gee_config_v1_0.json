@@ -1,6 +1,6 @@
 {
   "url": "https://earthengine.openeo.org/v1.0",
-  "openapi": "openapi_1_0_0rc2.yaml",
+  "openapi": "https://raw.githubusercontent.com/Open-EO/openeo-api/1.0.0/openapi.yaml",
   "username": "group1",
   "password": "test123",
   "authurl": "/credentials/basic",
