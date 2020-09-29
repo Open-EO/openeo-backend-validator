@@ -295,6 +295,7 @@ func (ct *ComplianceTest) buildRequest(endpoint Endpoint, token string, abs_url 
 		stringReader := strings.NewReader(string(dat))
 		stringReadCloser := ioutil.NopCloser(stringReader)
 		httpReq.Body = stringReadCloser
+		httpReq.ContentLength = int64(len(string(dat)))
 
 	} else if os.IsNotExist(err) {
 		// path/to/whatever does *not* exist
