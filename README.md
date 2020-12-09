@@ -4,9 +4,9 @@
 
 There are two tools in this repository to tackle the issue of compliance testing:
 
-1. *[openeo_compliance_tests](https://github.com/Open-EO/openeo-backend-validator/tree/master/openeo_compliance_tests)*
-  Python testing framework to validate back end endpoints (only GET), by reading from an JSON OpenAPI specification file.
 1. *[openeoct](https://github.com/Open-EO/openeo-backend-validator/tree/master/openeoct)*
-  Go standalone tool that validates single back end endpoints defined in a config file, by using an validation package of Go.
+  Go standalone tool that validates single back end endpoints defined in a config file, by using an validation package of Go
+1. ~*[openeo_compliance_tests](https://github.com/Open-EO/openeo-backend-validator/tree/master/openeo_compliance_tests)*
+  Python testing framework to validate back end endpoints (only GET), by reading from an JSON OpenAPI specification file.~ Do NOT use, this tool is outdated.
 
 Further information about the tools are in their folders.
