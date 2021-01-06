@@ -1,6 +1,0 @@
-requests
-pytest
-attrs>=17.4.0
-jsonschema
-py-openapi-schema-to-json-schema
-pytest_html
